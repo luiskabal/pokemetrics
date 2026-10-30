@@ -11,10 +11,12 @@
   import PokemonList from './components/PokemonList.svelte';
   import PokemonDialog from './components/PokemonDialog.svelte';
 
-  let pokemon = $state.raw<Pokemon[]>([]);
+  const initialCache = readCache();
+  let pokemon = $state.raw<Pokemon[]>(initialCache?.pokemon ?? []);
+  let savedAt = $state<number | null>(initialCache?.savedAt ?? null);
   let view = $state<ViewMode>('current');
   let selectedTypes = $state<TypeId[]>([]);
-  let selectedPokemon = $state.raw<Pokemon | null>(null);
+  let selectedPokemonId = $state<number | null>(null);
   let loadState = $state<LoadState>({ status: 'loading', message: 'Conectando con PokéAPI…', completed: 0 });
   let controller: AbortController;
   const legacy = $derived(view === 'legacy');
@@ -22,6 +24,9 @@
   const selected = $derived(new Set(selectedTypes));
   const analysis = $derived(analyzePokemon(pokemon, selected, view));
   const active = $derived(selected.size > 0 && pokemon.length > 0);
+  const updating = $derived(loadState.status === 'loading' || loadState.status === 'refreshing');
+  const savedDate = $derived(savedAt === null ? null : new Date(savedAt));
+  const selectedPokemon = $derived(selectedPokemonId === null ? null : pokemon.find(entry => entry.id === selectedPokemonId)!);
   const announcement = $derived(active
     ? `${legacy ? 'Vista Legacy. ' : 'Vista actual. '}${analysis.matches.length} Pokémon únicos de ${analysis.total} (${percentage(analysis.matches.length, analysis.total)}).`
     : 'Sin tipos seleccionados. El gráfico está vacío.');
@@ -38,21 +43,18 @@
   async function load(): Promise<void> {
     controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90_000);
-    loadState = { status: 'loading', message: 'Consultando la primera generación en PokéAPI…', completed: 0 };
+    const status = pokemon.length ? 'refreshing' : 'loading';
+    loadState = { status, message: status === 'refreshing' ? 'Actualizando datos en segundo plano…' : 'Consultando la primera generación en PokéAPI…', completed: 0 };
     try {
       pokemon = await fetchKanto(controller.signal, completed => {
-        loadState = { status: 'loading', message: `Leyendo tipos actuales e históricos · ${completed} de 151 Pokémon`, completed };
+        loadState = { status, message: `${status === 'refreshing' ? 'Actualizando en segundo plano' : 'Leyendo tipos actuales e históricos'} · ${completed} de 151 Pokémon`, completed };
       });
-      writeCache(pokemon);
+      savedAt = writeCache(pokemon);
       loadState = { status: 'ready', message: 'Datos listos · 151 Pokémon · Tipos actuales e históricos de PokéAPI', completed: 151 };
     } catch {
       controller.abort();
-      const cache = readCache();
-      if (cache) {
-        pokemon = cache.pokemon;
-        loadState = { status: 'cached', message: 'Sin conexión con PokéAPI · Usando datos guardados el ' + new Date(cache.savedAt).toLocaleDateString('es-CL'), completed: 151 };
-      } else if (pokemon.length) {
-        loadState = { status: 'cached', message: 'Sin conexión con PokéAPI · Se mantienen los últimos datos cargados.', completed: 151 };
+      if (pokemon.length) {
+        loadState = { status: 'cached', message: 'No se pudo actualizar PokéAPI. Puedes seguir usando los datos disponibles.', completed: 151 };
       } else {
         loadState = { status: 'error', message: 'No se pudo cargar PokéAPI. Revisa tu conexión y pulsa Reintentar.', completed: 0 };
       }
@@ -90,7 +92,9 @@
       <p class="view-description">{legacy ? 'Solo el primer tipo original de cada Pokémon. Sin segmentos combinados.' : 'Tipos actuales, con coincidencias entre los tipos seleccionados.'}</p>
     </div>
 
-    {#if loadState.status === 'error' || loadState.status === 'cached'}
+    {#if loadState.status === 'refreshing'}
+      <div class="alert alert-info app-notice" role="status"><span>Puedes explorar los datos disponibles mientras se actualizan en segundo plano.</span></div>
+    {:else if loadState.status === 'error' || loadState.status === 'cached'}
       <div class="alert alert-warning app-notice" role="status"><span>{loadState.message}</span><button class="btn btn-sm" type="button" onclick={load}>Reintentar</button></div>
     {/if}
 
@@ -124,19 +128,21 @@
         {/if}
       </div>
     </div>
-    <PokemonList pokemon={analysis.matches} {view} hasSelection={selected.size > 0} onOpen={entry => selectedPokemon = entry}/>
+    <PokemonList pokemon={analysis.matches} {view} hasSelection={selected.size > 0} onOpen={entry => selectedPokemonId = entry.id}/>
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
   </main>
 
   <footer class="connection" id="connection" data-state={loadState.status}>
     <div>
       <div class="connection-state">
-        {#if loadState.status === 'loading'}<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>{:else}<span class="status-dot"></span>{/if}
+        {#if updating}<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>{:else}<span class="status-dot"></span>{/if}
         <span id="connection-text" role="status">{loadState.message}</span>
+        {#if loadState.status === 'ready'}<button class="btn btn-ghost btn-xs text-button" type="button" onclick={load}>Actualizar</button>{/if}
       </div>
-      {#if loadState.status === 'loading'}<progress class="progress progress-primary connection-progress" value={loadState.completed} max="151" aria-label="Pokémon cargados"></progress>{/if}
+      {#if savedDate}<p class="cache-updated">Última carga: <time datetime={savedDate.toISOString()}>{savedDate.toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' })}</time></p>{/if}
+      {#if updating}<progress class="progress progress-primary connection-progress" value={loadState.completed} max="151" aria-label="Pokémon cargados"></progress>{/if}
     </div>
     <span class="footer-note">Hecho para explorar, un tipo a la vez.<br/>Primera generación · Formas originales</span>
   </footer>
 </div>
-<PokemonDialog pokemon={selectedPokemon} {view} onClose={() => selectedPokemon = null}/>
+<PokemonDialog pokemon={selectedPokemon} {view} onClose={() => selectedPokemonId = null}/>

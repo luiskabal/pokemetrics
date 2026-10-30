@@ -70,6 +70,7 @@ describe('consulta de la primera generación', () => {
     expect(result.map(entry => entry.id)).toEqual(Array.from({ length: 151 }, (_, index) => index + 1));
     expect(progress).toHaveBeenLastCalledWith(151);
     expect(fetch).toHaveBeenCalledTimes(152);
+    expect(fetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ cache: 'no-cache' }));
   });
 
   it('rechaza errores HTTP y una generación incompleta antes de consultar Pokémon', async () => {
@@ -97,6 +98,27 @@ describe('caché compatible con el HTML original', () => {
     expect(readCache()?.pokemon).toHaveLength(151);
     writeCache(pokemon);
     expect(setItem).toHaveBeenCalledWith(CACHE_KEY, expect.any(String));
+  });
+
+  it('conserva la antigüedad de una copia válida y rechaza fechas imposibles', () => {
+    const pokemon = dataset();
+    const savedAt = 1_700_000_000_000;
+    const getItem = vi.fn().mockReturnValue(JSON.stringify({ pokemon, savedAt }));
+    vi.stubGlobal('localStorage', { getItem });
+    expect(readCache()?.savedAt).toBe(savedAt);
+    getItem.mockReturnValue(JSON.stringify({ pokemon, savedAt: 1e20 }));
+    expect(readCache()).toBeNull();
+  });
+
+  it('devuelve la misma fecha que guarda, incluso si el almacenamiento está bloqueado', () => {
+    const savedAt = 1_800_000_000_000;
+    vi.spyOn(Date, 'now').mockReturnValue(savedAt);
+    const setItem = vi.fn();
+    vi.stubGlobal('localStorage', { setItem });
+    expect(writeCache(dataset())).toBe(savedAt);
+    expect(JSON.parse(setItem.mock.calls[0][1]).savedAt).toBe(savedAt);
+    setItem.mockImplementation(() => { throw new Error('Bloqueado'); });
+    expect(writeCache(dataset())).toBe(savedAt);
   });
 
   it('tolera JSON corrupto y almacenamiento bloqueado sin romper la aplicación', () => {

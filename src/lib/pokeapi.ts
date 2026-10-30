@@ -67,7 +67,7 @@ export function normalizePokemon(value: unknown): Pokemon {
 }
 
 async function fetchJson(path: string, signal: AbortSignal): Promise<unknown> {
-  const response = await fetch(API + path + '/', { signal, cache: 'force-cache' });
+  const response = await fetch(API + path + '/', { signal, cache: 'no-cache' });
   if (!response.ok) throw new Error(`PokéAPI respondió HTTP ${response.status}.`);
   return response.json();
 }
@@ -99,12 +99,14 @@ export async function fetchKanto(signal: AbortSignal, onProgress: (completed: nu
 export function readCache(): { pokemon: Pokemon[]; savedAt: number } | null {
   try {
     const value: unknown = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-    if (record(value) && isPokemonDataset(value.pokemon) && positiveInteger(value.savedAt)) return { pokemon: value.pokemon, savedAt: value.savedAt };
+    if (record(value) && isPokemonDataset(value.pokemon) && positiveInteger(value.savedAt) && Number.isFinite(new Date(value.savedAt).getTime())) return { pokemon: value.pokemon, savedAt: value.savedAt };
   } catch { /* El almacenamiento puede estar bloqueado o contener datos incompletos. */ }
   return null;
 }
 
-export function writeCache(pokemon: Pokemon[]): void {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ pokemon, savedAt: Date.now() })); }
+export function writeCache(pokemon: Pokemon[]): number {
+  const savedAt = Date.now();
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ pokemon, savedAt })); }
   catch { /* La consulta funciona aunque el navegador no permita almacenamiento. */ }
+  return savedAt;
 }

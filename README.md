@@ -36,3 +36,5 @@ Actual conserva ambos tipos y separa sus intersecciones en la torta. Legacy usa 
 GitHub Actions comprueba tipos, ejecuta las pruebas y compila antes de publicar `dist/` en GitHub Pages. La fuente de Pages debe ser **GitHub Actions**. Los cambios en `main` se publican automáticamente en <https://luiskabal.github.io/pokemetrics/>.
 
 No se requieren claves, backend ni variables de entorno. La primera carga necesita conexión a PokéAPI; las imágenes usan el repositorio público de sprites de PokéAPI. La caché `pokemetrics-kanto-v3` es compatible con el MVP anterior. Los archivos locales `index_v*.html` quedan fuera de Git y del despliegue.
+
+Al abrir, una caché válida se muestra inmediatamente y se actualiza en segundo plano, conservando los filtros y la ficha abierta. La fecha de la última carga queda visible. El botón **Actualizar** permite repetir la consulta; si falla, los datos disponibles y su fecha se conservan. Las respuestas HTTP se revalidan con PokéAPI, y la caché local se reemplaza únicamente después de completar y validar las 151 especies. Las imágenes dependen de la caché HTTP del navegador y no se guardan en `localStorage`.
