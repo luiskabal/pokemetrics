@@ -1,5 +1,6 @@
 import { LANGUAGES } from './localization';
 import type { Language, LocalizedNames } from './localization';
+import { VERSION_GENERATIONS, VERSION_GROUP_GENERATIONS } from './generations';
 
 const API = 'https://pokeapi.co/api/v2/';
 const KEY = 'pokemetrics-info-v1';
@@ -32,7 +33,7 @@ export function parseSpecies(raw: unknown): SpeciesInfo {
   };
 }
 export function descriptionFor(species: SpeciesInfo, language: Language, generation: number | 'current') {
-  const entries = species.entries.filter(entry => generation === 'current' || (generation === 1 && ['red', 'blue', 'yellow', 'green'].includes(entry.version))).sort((a, b) => b.versionId - a.versionId);
+  const entries = species.entries.filter(entry => generation === 'current' || VERSION_GENERATIONS[entry.versionId] === generation).sort((a, b) => b.versionId - a.versionId);
   for (const locale of [...new Set([language, ...(language === 'es-419' ? ['es' as const] : []), 'en' as const])]) {
     const entry = entries.find(entry => entry.language === locale);
     if (entry) return entry;
@@ -52,9 +53,9 @@ export function abilitiesFor(raw: unknown, generation: number | 'current'): Slot
   return [...selected.values()].filter(slot => slot.id !== null).sort((a, b) => a.slot - b.slot);
 }
 interface AbilityInfo { id: number; name: string; names: LocalizedNames; description: LocalizedNames }
-function parseAbility(raw: unknown): AbilityInfo {
+function parseAbility(raw: unknown, generation: number | 'current'): AbilityInfo {
   if (!record(raw)) throw Error('Invalid ability');
-  const flavors = rows(raw.flavor_text_entries).sort((a, b) => { if (!record(a.version_group) || !record(b.version_group)) throw Error('Invalid ability version'); return idOf(b.version_group.url) - idOf(a.version_group.url); });
+  const flavors = rows(raw.flavor_text_entries).filter(row => generation === 'current' || record(row.version_group) && VERSION_GROUP_GENERATIONS[idOf(row.version_group.url)] === generation).sort((a, b) => { if (!record(a.version_group) || !record(b.version_group)) throw Error('Invalid ability version'); return idOf(b.version_group.url) - idOf(a.version_group.url); });
   return { id: Number(raw.id), name: clean(raw.name), names: names(raw.names), description: names(flavors, 'flavor_text') };
 }
 interface ChainNode { id: number; depth: number }
@@ -97,7 +98,7 @@ export async function loadPokemonInfo(id: number, generation: number | 'current'
   const firstDepth = Math.min(...evolutions.map(node => node.depth));
   for (const node of evolutions) node.depth -= firstDepth;
   const selected = generation !== 'current' && generation < 3 ? [] : await resource(`pokemon/${id}`, raw => abilitiesFor(raw, generation), signal);
-  const abilities = await Promise.all(selected.map(async slot => ({ hidden: slot.hidden, info: await resource(`ability/${slot.id}`, parseAbility, signal) })));
+  const abilities = await Promise.all(selected.map(async slot => ({ hidden: slot.hidden, info: await resource(`ability/${slot.id}`, raw => parseAbility(raw, generation), signal) })));
   const versionIds = [...new Set(LANGUAGES.flatMap(locale => { const entry = descriptionFor(species, locale.id, generation); return entry ? [entry.versionId] : []; }))];
   const versions = Object.fromEntries(await Promise.all(versionIds.map(async versionId => [versionId, await resource(`version/${versionId}`, raw => { if (!record(raw)) throw Error('Invalid version'); return names(raw.names); }, signal)])));
   return { species, evolutions, abilities, versions };

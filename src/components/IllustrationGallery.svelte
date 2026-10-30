@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { ILLUSTRATIONS } from '../lib/metadata';
+  import { generation } from '../lib/generation-state';
+  import { illustrationOptions } from '../lib/generations';
   import type { IllustrationId } from '../lib/metadata';
   import type { Pokemon } from '../lib/model';
   import PokemonImage from './PokemonImage.svelte';
   import { language, t } from '../lib/i18n';
   import { imageName } from '../lib/localization';
   let { pokemon, defaultIllustration }: { pokemon: Pokemon; defaultIllustration: IllustrationId } = $props();
-  const illustrations = $derived(ILLUSTRATIONS.map(version => ({ ...version, url: version.id === 'current' ? pokemon.image : pokemon.historicalArtworks?.[version.id] })));
+  const illustrations = $derived(illustrationOptions($generation).map(version => ({ ...version, url: version.id === 'current' ? pokemon.image : version.id.startsWith('game:') ? pokemon.gameSprites[version.id.slice(5)]?.front : pokemon.historicalArtworks?.[version.id as keyof typeof pokemon.historicalArtworks] })));
   let selectedId = $state<IllustrationId | null>(null);
-  const current = $derived(illustrations.find(image => image.id === (selectedId ?? defaultIllustration))!);
+  // Al navegar entre generaciones, la elección anterior puede dejar de existir en la nueva edición.
+  const current = $derived(illustrations.find(image => image.id === (selectedId ?? defaultIllustration)) ?? illustrations[0]);
 </script>
 
 <section class="illustration-gallery" aria-labelledby="illustration-title">

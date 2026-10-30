@@ -10,7 +10,8 @@
     "test": "vitest run",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "update:locales": "node scripts/update-locales.mjs"
+    "update:locales": "node scripts/update-locales.mjs",
+    "update:generations": "node scripts/update-generations.mjs"
   },
   "dependencies": { "svelte": "5.57.3" },
   "devDependencies": {

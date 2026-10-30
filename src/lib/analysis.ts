@@ -64,7 +64,7 @@ export function percentage(count: number, total: number, language: Language = 'e
 
 const searchText = (text: string) => text.normalize('NFKC').normalize('NFD').replace(/(\p{Script=Latin})\p{M}+/gu, '$1').normalize('NFC').toLowerCase().replace(/♀/g, 'f').replace(/♂/g, 'm').replace(/[^\p{L}\p{N}]/gu, '');
 
-export function filterAndSortPokemon(pokemon: readonly Pokemon[], query: string, order: PokemonOrder, language: Language = 'es-419', view: ViewMode = 'current'): Pokemon[] {
+export function filterAndSortPokemon(pokemon: readonly Pokemon[], query: string, order: PokemonOrder, language: Language = 'es-419', view: ViewMode = 'current', generation = 1): Pokemon[] {
   const term = searchText(query);
   const id = /^\d+$/.test(term) ? Number(term) : null;
   const matches = pokemon.filter(entry => !term || (id === null ? pokemonAliases(entry.name).some(name => searchText(name).includes(term)) : entry.id === id));
@@ -73,7 +73,7 @@ export function filterAndSortPokemon(pokemon: readonly Pokemon[], query: string,
   if (order.startsWith('number')) return matches.sort((a, b) => direction * (a.id - b.id));
   if (order.startsWith('name')) return matches.sort((a, b) => direction * (nameOrder.compare(pokemonName(a.name, language), pokemonName(b.name, language)) || a.id - b.id));
   const field = order.slice(0, order.lastIndexOf('-'));
-  const values = new Map(matches.map(entry => [entry.id, field === 'height' || field === 'weight' ? entry[field] : statsForGeneration(entry, view === 'legacy' ? 1 : 'current')?.find(stat => stat.id === field)?.value ?? null]));
+  const values = new Map(matches.map(entry => [entry.id, field === 'height' || field === 'weight' ? entry[field] : statsForGeneration(entry, view === 'legacy' ? generation : 'current')?.find(stat => stat.id === field)?.value ?? null]));
   return matches.sort((a, b) => {
     const first = values.get(a.id)!, second = values.get(b.id)!;
     if (first === null || second === null) return first === second ? a.id - b.id : first === null ? 1 : -1;

@@ -2,6 +2,7 @@ import catalogData from './locale-data.json';
 import { LATIN_MESSAGES, MESSAGES } from './messages';
 import type { MessageKey } from './messages';
 import type { HistoricalStatId, IllustrationId, ImageSet, TypeId } from './metadata';
+import { GAME_BY_ID } from './generations';
 
 export const LANGUAGES = [
   { id: 'en', label: 'English', locale: 'en-US' },
@@ -45,8 +46,11 @@ export function statName(stat: HistoricalStatId, language: Language = 'es-419'):
 }
 
 export function imageName(id: ImageSet | IllustrationId, language: Language): string {
-  const key: MessageKey = id === 'current' || id === 'artwork' ? 'artCurrent' : id === 'red-and-green' || id === 'red-green-japan' ? 'gameRedGreen' : id === 'yellow' ? 'gameYellow' : 'gameRedBlue';
-  return translate(language, key);
+  const game = GAME_BY_ID.get(id.replace(/^game:/, ''));
+  if (game) return localizedName(game.names, language, game.id);
+  if (id === 'gold-and-silver') return translate(language, 'gameGoldSilver');
+  const key: MessageKey | undefined = id === 'current' || id === 'artwork' ? 'artCurrent' : id === 'red-and-green' || id === 'red-green-japan' ? 'gameRedGreen' : id === 'yellow' ? 'gameYellow' : id === 'red-and-blue' || id === 'red-blue' ? 'gameRedBlue' : undefined;
+  return key ? translate(language, key) : id.replace(/^game:/, '').replaceAll('-', ' ');
 }
 
 export function readLanguage(): Language {

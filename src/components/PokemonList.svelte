@@ -1,16 +1,18 @@
 <script lang="ts">
   import type { Pokemon, PokemonOrder, ViewMode } from '../lib/model';
-  import { GEN_I_STATS, ILLUSTRATIONS, STATS } from '../lib/metadata';
+  import { GEN_I_STATS, STATS } from '../lib/metadata';
   import type { IllustrationId } from '../lib/metadata';
   import { filterAndSortPokemon } from '../lib/analysis';
   import PokemonCard from './PokemonCard.svelte';
   import FavoriteButton from './FavoriteButton.svelte';
+  import { generation } from '../lib/generation-state';
+  import { generationInfo, illustrationOptions } from '../lib/generations';
   import { language, t } from '../lib/i18n';
   import { imageName, statName } from '../lib/localization';
   let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen, query = $bindable(''), order = $bindable<PokemonOrder>('number-asc'), onOrderChange, segmentLabel, onClearSegment, compareIds, onCompare, favorites, onlyFavorites, onFavorite, onOnlyFavorites }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; query?: string; order?: PokemonOrder; onOrderChange: () => void; segmentLabel: string | null; onClearSegment: () => void; compareIds: number[]; onCompare: (id: number) => void; favorites: ReadonlySet<number>; onlyFavorites: boolean; onFavorite: (id: number) => void; onOnlyFavorites: () => void } = $props();
   let searchInput: HTMLInputElement;
-  const statOptions = $derived(view === 'legacy' ? GEN_I_STATS : STATS);
-  const results = $derived(filterAndSortPokemon(pokemon, query, order, $language, view));
+  const statOptions = $derived(view === 'legacy' && $generation === 1 ? GEN_I_STATS : STATS);
+  const results = $derived(filterAndSortPokemon(pokemon, query, order, $language, view, $generation));
   $effect(() => {
     const field = order.slice(0, order.lastIndexOf('-'));
     if (!['number', 'name', 'height', 'weight', ...statOptions.map(stat => stat.id)].includes(field)) order = 'number-asc';
@@ -47,11 +49,12 @@
     <div class="pokemon-illustration">
       <label for="illustration-set">{$t('illustrations')}</label>
       <select class="select" id="illustration-set" value={illustration} onchange={event => onIllustrationChange(event.currentTarget.value as IllustrationId)} aria-describedby="illustration-filter-help">
-        {#each ILLUSTRATIONS as option (option.id)}<option value={option.id}>{imageName(option.id, $language)}</option>{/each}
+        {#each illustrationOptions($generation) as option (option.id)}<option value={option.id}>{imageName(option.id, $language)}</option>{/each}
       </select>
     </div>
   </div>
-  <p class="list-help" id="pokemon-search-help">{$t(hasSelection ? 'searchHelp' : 'selectHelp')}</p>
+  <p class="list-help" id="pokemon-search-help">{$t(hasSelection ? 'searchHelp' : 'selectHelp', { total: generationInfo($generation).speciesIds.length })}</p>
+  {#if illustration.startsWith('game:') && pokemon.some(entry => !entry.gameSprites[illustration.slice(5)]?.front)}<p class="list-help">{$t('missingGameImages')}</p>{/if}
   <p class="list-help">{$t('sortHelp')}</p>
   <p class="list-help" id="illustration-filter-help">{$t('illustrationHelp')}</p>
   {#if illustration !== 'current' && pokemon.some(entry => entry.historicalArtworks === undefined)}<p class="list-help">{$t('historicalPending')}</p>{/if}

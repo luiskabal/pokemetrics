@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { LEGACY_TYPES, TYPES, TYPE_BY_ID } from './lib/metadata';
+  import { TYPES, TYPE_BY_ID } from './lib/metadata';
   import type { IllustrationId, ImageSet, TypeId } from './lib/metadata';
   import type { LoadState, Pokemon, ViewMode } from './lib/model';
   import { analyzePokemon, percentage, pokemonInSegment } from './lib/analysis';
-  import { fetchKanto, readCache, writeCache } from './lib/pokeapi';
+  import { fetchGeneration, readCache, writeCache } from './lib/pokeapi';
   import TypeFilters from './components/TypeFilters.svelte';
   import DistributionChart from './components/DistributionChart.svelte';
   import TypeIcon from './components/TypeIcon.svelte';
@@ -14,14 +14,19 @@
   import PokemonComparison from './components/PokemonComparison.svelte';
   import ShareLink from './components/ShareLink.svelte';
   import { language, t } from './lib/i18n';
-  import { LOCALES, pokemonName, saveLanguage, typeName } from './lib/localization';
+  import { LOCALES, localizedName, pokemonName, saveLanguage, typeName } from './lib/localization';
   import { explorationUrl, readExploration } from './lib/navigation';
   import type { ExplorationState } from './lib/navigation';
   import type { PokemonOrder } from './lib/model';
   import { readFavorites, saveFavorites } from './lib/favorites';
+  import { generation } from './lib/generation-state';
+  import { GENERATIONS, SPECIES_GENERATION, defaultIllustration, generationInfo, typesForGeneration } from './lib/generations';
+  import GenerationComparison from './components/GenerationComparison.svelte';
 
-  const initialCache = readCache();
   const initialLocation = readExploration(new URL(location.href), $language);
+  generation.set(initialLocation.generation);
+  const initialCache = readCache(initialLocation.generation);
+  let dataGeneration = initialLocation.generation;
   language.set(initialLocation.language);
   let pokemon = $state.raw<Pokemon[]>(initialCache?.pokemon ?? []);
   let savedAt = $state<number | null>(initialCache?.savedAt ?? null);
@@ -39,11 +44,15 @@
   let onlyFavorites = $state(initialLocation.onlyFavorites);
   let favoriteSaveFailed = $state(false);
   let comparisonOpen = $state(false);
+  let against = $state<number | null>(initialLocation.against);
   let selectedPokemonId = $state<number | null>(initialLocation.pokemonId);
   let loadState = $state<LoadState>({ status: 'loading', completed: 0 });
-  let controller: AbortController;
+  let controller: AbortController | null = null;
+  const definition = $derived(generationInfo($generation));
+  const eraLabel = $derived(localizedName(definition.names, $language, definition.roman));
+  const regionLabel = $derived(localizedName(definition.regionNames, $language, ''));
   const legacy = $derived(view === 'legacy');
-  const availableTypes = $derived(legacy ? LEGACY_TYPES : TYPES);
+  const availableTypes = $derived(legacy ? typesForGeneration($generation) : TYPES);
   const selected = $derived(new Set(selectedTypes));
   const analysis = $derived(analyzePokemon(pokemon, selected, view, $language));
   const active = $derived(selected.size > 0 && pokemon.length > 0);
@@ -59,9 +68,10 @@
     ? `${$t(legacy ? 'legacy' : 'current')}. ${$t('announcement', { count: analysis.matches.length, total: analysis.total, percent: percentage(analysis.matches.length, analysis.total, $language) })}`
     : $t('emptyAnnouncement'));
   const connectionMessage = $derived.by(() => {
-    if (loadState.completed && loadState.status === 'loading') return $t('loadingProgress', { completed: loadState.completed });
-    if (loadState.completed && loadState.status === 'refreshing') return $t('refreshingProgress', { completed: loadState.completed });
-    return $t(loadState.status);
+    const values = { completed: loadState.completed, total: definition.speciesIds.length };
+    if (loadState.completed && loadState.status === 'loading') return $t('loadingProgress', values);
+    if (loadState.completed && loadState.status === 'refreshing') return $t('refreshingProgress', values);
+    return $t(loadState.status, values);
   });
   const explanationValues = $derived({
     bulbasaur: pokemonName('bulbasaur', $language), charizard: pokemonName('charizard', $language),
@@ -71,12 +81,14 @@
 
   $effect(() => {
     document.documentElement.lang = $language;
-    document.title = $t('pageTitle');
+    document.title = 'Pokémetrics · ' + regionLabel;
+    document.documentElement.dataset.generation = String($generation);
+    document.querySelector('meta[name="theme-color"]')!.setAttribute('content', $generation === 1 ? '#963f3e' : getComputedStyle(document.documentElement).getPropertyValue('--era-accent').trim());
     saveLanguage($language);
   });
 
   $effect(() => {
-    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites };
+    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against };
     const url = explorationUrl(new URL(location.href), state).href;
     if (url !== location.href) history.replaceState(null, '', url);
     shareUrl = url;
@@ -89,12 +101,26 @@
     view = next.view; selectedTypes = next.types; query = next.query; order = next.order; chart = next.chart;
     selectedSegment = next.segment; selectedPokemonId = next.pokemonId; imageSet = next.imageSet; illustration = next.illustration;
     onlyFavorites = next.onlyFavorites;
+    against = next.against;
     language.set(next.language);
+    if ($generation !== next.generation) { compareIds = []; comparisonOpen = false; }
+    generation.set(next.generation);
   }
 
   function openPokemon(id: number | null): void {
     if (id === selectedPokemonId) return;
+    if (id !== null && SPECIES_GENERATION.get(id) !== $generation) { changeGeneration(SPECIES_GENERATION.get(id)!, id); return; }
     checkpoint(); selectedPokemonId = id;
+  }
+
+  function changeGeneration(id: number, pokemonId: number | null = null): void {
+    checkpoint();
+    const next = generationInfo(id);
+    selectedPokemonId = pokemonId; selectedSegment = null; query = ''; compareIds = []; comparisonOpen = false;
+    illustration = defaultIllustration(id); imageSet = next.games[0].id; order = 'number-asc';
+    if (legacy) selectedTypes = selectedTypes.filter(type => typesForGeneration(id).some(item => item.id === type));
+    if (against === id) against = null;
+    generation.set(id);
   }
 
   function toggleType(type: TypeId): void {
@@ -131,24 +157,31 @@
     checkpoint();
     view = next;
     selectedSegment = null;
-    if (next === 'legacy') selectedTypes = selectedTypes.filter(id => LEGACY_TYPES.some(type => type.id === id));
+    if (next === 'legacy') selectedTypes = selectedTypes.filter(id => typesForGeneration($generation).some(type => type.id === id));
   }
 
-  async function load(): Promise<void> {
-    controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90_000);
+  async function load(id = $generation): Promise<void> {
+    controller?.abort();
+    const request = new AbortController(); controller = request;
+    if (dataGeneration !== id) {
+      const cached = readCache(id); pokemon = cached?.pokemon ?? []; savedAt = cached?.savedAt ?? null; dataGeneration = id;
+    }
+    const timeout = setTimeout(() => request.abort(), 90_000);
     const status = pokemon.length ? 'refreshing' : 'loading';
     loadState = { status, completed: 0 };
     try {
-      pokemon = await fetchKanto(controller.signal, completed => {
-        loadState = { status, completed };
+      const entries = await fetchGeneration(id, request.signal, completed => {
+        if (controller === request) loadState = { status, completed };
       });
-      savedAt = writeCache(pokemon);
-      loadState = { status: 'ready', completed: 151 };
+      if (controller !== request) return;
+      pokemon = entries;
+      savedAt = writeCache(pokemon, id);
+      loadState = { status: 'ready', completed: entries.length };
     } catch {
-      controller.abort();
+      request.abort();
+      if (controller !== request) return;
       if (pokemon.length) {
-        loadState = { status: 'cached', completed: 151 };
+        loadState = { status: 'cached', completed: pokemon.length };
       } else {
         loadState = { status: 'error', completed: 0 };
       }
@@ -158,9 +191,9 @@
   }
 
   onMount(() => {
-    void load();
+    const unsubscribe = generation.subscribe(id => { void load(id); });
     window.addEventListener('popstate', restoreLocation);
-    return () => { controller.abort(); window.removeEventListener('popstate', restoreLocation); };
+    return () => { unsubscribe(); controller?.abort(); window.removeEventListener('popstate', restoreLocation); };
   });
 </script>
 
@@ -176,27 +209,32 @@
 
   <main>
     <section class="intro" aria-labelledby="page-title">
-      <div><p class="eyebrow">{$t('eyebrow')}</p><h1 id="page-title">{$t('title')}</h1><p class="intro-copy">{$t('intro')}</p></div>
-      <div class="generation"><span class="badge">I</span><div><strong>{$t('generation')}</strong><small>{$t('region')}</small><small class="generation-hardware" lang="en">GAME BOY · 1996</small></div></div>
+      <div><p class="eyebrow">{$t('generationEyebrow', { total: definition.speciesIds.length })}</p><h1 id="page-title">{$t('regionTitle', { region: regionLabel })}</h1><p class="intro-copy">{$t('generationIntro')}</p></div>
+      <div class="generation"><span class="badge">{definition.roman}</span><div><strong>{eraLabel}</strong><small>{$t('regionLabel', { region: regionLabel })}</small><small class="generation-hardware" lang="en">{definition.platform} · {definition.year}</small></div></div>
     </section>
+
+    <div class="generation-controls">
+      <div class="image-selector"><label for="generation-select">{$t('chooseGeneration')}</label><select class="select" id="generation-select" value={$generation} onchange={event => changeGeneration(Number(event.currentTarget.value))}>{#each GENERATIONS as option (option.id)}<option value={option.id}>{localizedName(option.names, $language, option.roman)} · {localizedName(option.regionNames, $language, '')}</option>{/each}</select></div>
+      <div class="image-selector"><label for="against-generation">{$t('compareGeneration')}</label><select class="select" id="against-generation" value={against ?? ''} onchange={event => { checkpoint(); against = event.currentTarget.value ? Number(event.currentTarget.value) : null; }}><option value="">{$t('noGenerationComparison')}</option>{#each GENERATIONS.filter(option => option.id !== $generation) as option (option.id)}<option value={option.id}>{localizedName(option.names, $language, option.roman)}</option>{/each}</select></div>
+    </div>
 
     <div class="view-controls">
       <div class="join view-switch" role="group" aria-label={$t('typeView')}>
         <button class="btn join-item" id="view-current" type="button" aria-pressed={!legacy} onclick={() => changeView('current')}>{$t('current')}</button>
         <button class="btn join-item" id="view-legacy" type="button" aria-pressed={legacy} onclick={() => changeView('legacy')}>{$t('legacy')}</button>
       </div>
-      <p class="view-description">{$t(legacy ? 'legacyDescription' : 'currentDescription')}</p>
+      <p class="view-description">{$t(legacy ? 'legacyDescription' : 'currentDescription', { generation: eraLabel })}</p>
       <ShareLink url={shareUrl} id="share-link"/>
     </div>
 
     {#if loadState.status === 'refreshing'}
       <div class="alert alert-info app-notice" role="status"><span>{$t('refreshingNotice')}</span></div>
     {:else if loadState.status === 'error' || loadState.status === 'cached'}
-      <div class="alert alert-warning app-notice" role="status"><span>{connectionMessage}</span><button class="btn btn-sm" type="button" onclick={load}>{$t('retry')}</button></div>
+      <div class="alert alert-warning app-notice" role="status"><span>{connectionMessage}</span><button class="btn btn-sm" type="button" onclick={() => load()}>{$t('retry')}</button></div>
     {/if}
 
     <section class="overview" aria-label={$t('overview')}>
-      <div class="overview-stat"><span class="overview-value" id="total-pokemon">{pokemon.length || '—'}</span><span class="overview-label">{$t('kantoPokemon')}<small>{$t('oneSpecies')}</small></span></div>
+      <div class="overview-stat"><span class="overview-value" id="total-pokemon">{pokemon.length || '—'}</span><span class="overview-label">{$t('introducedPokemon')}<small>{$t('oneSpecies')}</small></span></div>
       <div class="overview-stat"><span class="overview-value" id="available-types">{availableTypes.length}</span><span class="overview-label">{$t('typesToExplore')}<small>{$t(legacy ? 'originalTypes' : 'currentClassification')}</small></span></div>
       <div class="overview-stat"><span class="overview-value" id="selected-top">{selected.size}</span><span class="overview-label">{$t('selectedTypes')}<small>{$t('liveMix')}</small></span></div>
     </section>
@@ -207,7 +245,7 @@
         <DistributionChart {analysis} {active} {legacy} {chart} onChartChange={value => { checkpoint(); chart = value; }} selectedSegment={segment?.key ?? null} onSegment={selectSegment}/>
         <aside class="explanation"><span class="tip-icon" aria-hidden="true">✧</span><p>
           {#if legacy}
-            <strong>{$t('originalExplanationTitle')}</strong> {$t('originalExplanation', explanationValues)}
+            <strong>{$t('originalExplanationTitle')}</strong> {$t('historicalExplanation', { generation: eraLabel, total: definition.speciesIds.length })}
           {:else}
             <strong>{$t('currentExplanationTitle')}</strong> {$t('currentExplanation', explanationValues)}
           {/if}
@@ -225,6 +263,7 @@
         {/if}
       </div>
     </div>
+    {#if against !== null}<GenerationComparison {pokemon} other={against} {selected} {view}/>{/if}
     {#if favoriteSaveFailed}<p class="app-notice" role="status">{$t('favoritesSessionOnly')}</p>{/if}
     <PokemonList pokemon={listedPokemon} bind:query bind:order onOrderChange={checkpoint} {favorites} {onlyFavorites} onFavorite={toggleFavorite} onOnlyFavorites={() => { checkpoint(); onlyFavorites = !onlyFavorites; }} {compareIds} onCompare={toggleCompare} segmentLabel={segment?.label ?? null} onClearSegment={() => { checkpoint(); selectedSegment = null; }} {view} {illustration} onIllustrationChange={value => { checkpoint(); illustration = value; }} hasSelection={selected.size > 0 || onlyFavorites} onOpen={entry => openPokemon(entry.id)}/>
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
@@ -235,12 +274,12 @@
       <div class="connection-state">
         {#if updating}<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>{:else}<span class="status-dot"></span>{/if}
         <span id="connection-text" role="status">{connectionMessage}</span>
-        {#if loadState.status === 'ready'}<button class="btn btn-ghost btn-xs text-button" type="button" onclick={load}>{$t('refresh')}</button>{/if}
+        {#if loadState.status === 'ready'}<button class="btn btn-ghost btn-xs text-button" type="button" onclick={() => load()}>{$t('refresh')}</button>{/if}
       </div>
       {#if savedDate}<p class="cache-updated">{$t('lastLoaded')} <time datetime={savedDate.toISOString()}>{savedDate.toLocaleString(LOCALES[$language], { dateStyle: 'medium', timeStyle: 'short' })}</time></p>{/if}
-      {#if updating}<progress class="progress progress-primary connection-progress" value={loadState.completed} max="151" aria-label={$t('loadedPokemon')}></progress>{/if}
+      {#if updating}<progress class="progress progress-primary connection-progress" value={loadState.completed} max={definition.speciesIds.length} aria-label={$t('loadedPokemon')}></progress>{/if}
     </div>
-    <span class="footer-note">{$t('footer')}<br/>{$t('originalForms')}</span>
+    <span class="footer-note">{$t('footer')}<br/>{$t('originalForms', { generation: eraLabel })}</span>
   </footer>
 </div>
 {#if compareIds.length}<aside class="compare-tray" aria-label={$t('compareTitle')}><span role="status">{$t('compareCount', { count: compareIds.length })}</span><button class="btn btn-sm" id="open-comparison" type="button" disabled={compareIds.length < 2} onclick={() => comparisonOpen = true}>{$t('compare')}</button><button class="btn btn-sm" type="button" onclick={() => compareIds = []}>{$t('clear')}</button></aside>{/if}

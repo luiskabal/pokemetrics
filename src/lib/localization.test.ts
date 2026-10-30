@@ -15,8 +15,8 @@ const entries: Pokemon[] = [
 ].map(entry => ({ ...entry, legacyTypes: entry.id === 122 ? ['psychic'] : entry.types, image: null, sprite: null, gameSprites: { 'red-green-japan': { front: null, back: null }, 'red-blue': { front: null, back: null }, yellow: { front: null, back: null } }, height: 7, weight: 69, stats: STATS.map(stat => ({ id: stat.id, value: 45 })) })) as Pokemon[];
 
 describe('catálogo oficial y traducciones', () => {
-  it('incluye las 151 especies, los 18 tipos actuales y las seis estadísticas', () => {
-    expect(Object.keys(catalog.pokemon)).toHaveLength(151);
+  it('incluye las 1025 especies, los 18 tipos actuales y las seis estadísticas', () => {
+    expect(Object.keys(catalog.pokemon)).toHaveLength(1025);
     expect(Object.keys(catalog.types).sort()).toEqual(TYPES.map(type => type.id).sort());
     expect(Object.keys(catalog.stats).sort()).toEqual(STATS.map(stat => stat.id).sort());
     for (const names of [...Object.values(catalog.pokemon), ...Object.values(catalog.types), ...Object.values(catalog.stats)]) {

@@ -1,17 +1,19 @@
 <script lang="ts">
-  import { GAMES } from '../lib/metadata';
   import type { GameId, HistoricalStatId } from '../lib/metadata';
   import type { Pokemon, ViewMode } from '../lib/model';
   import { statsForGeneration } from '../lib/stats';
   import { language, t } from '../lib/i18n';
   import { imageName, statName } from '../lib/localization';
+  import { generation } from '../lib/generation-state';
+  import { generationInfo } from '../lib/generations';
+  import { localizedName } from '../lib/localization';
 
   let { pokemon, view }: { pokemon: Pokemon; view: ViewMode } = $props();
   let localVersion = $state<GameId | 'current' | null>(null);
   let chart = $state<'radar' | 'bars'>('radar');
-  const version = $derived(localVersion ?? (view === 'legacy' ? 'red-green-japan' : 'current'));
+  const version = $derived(localVersion ?? (view === 'legacy' ? generationInfo($generation).games[0].id : 'current'));
   const current = $derived(version === 'current');
-  const stats = $derived(statsForGeneration(pokemon, current ? 'current' : 1));
+  const stats = $derived(statsForGeneration(pokemon, current ? 'current' : $generation));
   const summary = $derived(stats?.map(stat => `${statName(stat.id, $language)}: ${stat.value}`).join('. ') ?? '');
 
   function point(index: number, count: number, fraction = 1) {
@@ -45,12 +47,13 @@
     <label for="pokemon-stats-version">{$t('statsVersion')}</label>
     <select class="select" id="pokemon-stats-version" value={version} aria-describedby="stats-note" onchange={event => localVersion = event.currentTarget.value as GameId | 'current'}>
       <option value="current">{$t('statsCurrent')}</option>
-      {#each GAMES as game (game.id)}<option value={game.id}>{imageName(game.id, $language)}</option>{/each}
+      {#each generationInfo($generation).games as game (game.id)}<option value={game.id}>{imageName(game.id, $language)}</option>{/each}
     </select>
   </div>
-  <p class="stat-note" id="stats-note">{$t(current ? 'statNote' : 'statLegacyNote')}</p>
+  <p class="stat-note" id="stats-note">{$t(current ? 'statNote' : $generation === 1 ? 'statLegacyNote' : 'statHistoricalNote', { generation: localizedName(generationInfo($generation).names, $language, '') })}</p>
+  <p class="stat-note">{$t('statsDefaultForm')}</p>
   {#if stats}
-    {#if !current}<p class="stat-note stats-shared">{$t('statsShared')}</p>{/if}
+    {#if !current}<p class="stat-note stats-shared">{$t($generation === 1 ? 'statsShared' : 'statsSharedGeneral')}</p>{/if}
     <div class="stats-body" class:stats-body-radar={chart === 'radar'}>
       {#if chart === 'radar'}
         <svg class="stat-radar" id="pokemon-stat-radar" viewBox="0 0 400 320" role="img" aria-labelledby="stat-radar-title stat-radar-description">

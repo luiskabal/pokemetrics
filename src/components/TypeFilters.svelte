@@ -1,15 +1,18 @@
 <script lang="ts">
-  import { LEGACY_TYPES, TYPES } from '../lib/metadata';
+  import { TYPES } from '../lib/metadata';
   import type { ImageSet, TypeId } from '../lib/metadata';
   import TypeIcon from './TypeIcon.svelte';
   import ImageSelector from './ImageSelector.svelte';
   import { language, t } from '../lib/i18n';
   import { typeName } from '../lib/localization';
+  import { generation } from '../lib/generation-state';
+  import { typesForGeneration, generationInfo } from '../lib/generations';
+  import { localizedName } from '../lib/localization';
   let { legacy, selected, imageSet, onImageSetChange, disabled, onToggle, onAll, onClear }: {
     legacy: boolean; selected: ReadonlySet<TypeId>; imageSet: ImageSet; onImageSetChange: (value: ImageSet) => void; disabled: boolean;
     onToggle: (type: TypeId) => void; onAll: () => void; onClear: () => void;
   } = $props();
-  const types = $derived(legacy ? LEGACY_TYPES : TYPES);
+  const types = $derived(legacy ? typesForGeneration($generation) : TYPES);
 </script>
 
 <aside class="card filters" aria-labelledby="filters-title">
@@ -31,7 +34,7 @@
       </button>
     {/each}
   </div>
-  <p class="filter-footnote"><span aria-hidden="true">ⓘ</span><span id="filter-note">{$t(legacy ? 'legacyTypeNote' : 'currentTypeNote')}</span></p>
+  <p class="filter-footnote"><span aria-hidden="true">ⓘ</span><span id="filter-note">{$t(legacy ? 'historicalTypeNote' : 'currentTypeNoteGeneral', { count: types.length, generation: localizedName(generationInfo($generation).names, $language, '') })}</span></p>
   <div class="filter-images">
     <ImageSelector id="image-set" label={$t('detailImages')} value={imageSet} onChange={onImageSetChange}/>
     <p class="image-scope-note">{$t('detailImagesHelp')}</p>

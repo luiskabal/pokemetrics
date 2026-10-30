@@ -8,10 +8,11 @@
   import { language, t } from '../lib/i18n';
   import PokemonImage from './PokemonImage.svelte';
   import TypeBadge from './TypeBadge.svelte';
+  import { generation } from '../lib/generation-state';
   let { pokemon, view, illustration, open, onClose, onRemove }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; open: boolean; onClose: () => void; onRemove: (id: number) => void } = $props();
   let dialog: HTMLDialogElement;
-  const fields = $derived(view === 'legacy' ? GEN_I_STATS : STATS);
-  const columns = $derived(pokemon.map(entry => ({ pokemon: entry, stats: statsForGeneration(entry, view === 'legacy' ? 1 : 'current') })));
+  const fields = $derived(view === 'legacy' && $generation === 1 ? GEN_I_STATS : STATS);
+  const columns = $derived(pokemon.map(entry => ({ pokemon: entry, stats: statsForGeneration(entry, view === 'legacy' ? $generation : 'current') })));
   $effect(() => { if (open) dialog.showModal(); else if (dialog.open) dialog.close(); });
 </script>
 

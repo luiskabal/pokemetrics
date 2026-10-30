@@ -2,8 +2,12 @@ import { writeFile } from 'node:fs/promises';
 
 const languages = ['en', 'es', 'es-419', 'ja'];
 const catalog = { source: 'https://pokeapi.co/api/v2/', pokemon: {}, types: {}, stats: {} };
+const speciesResponse = await fetch(catalog.source + 'pokemon-species/?limit=10000', { signal: AbortSignal.timeout(30000) });
+if (!speciesResponse.ok) throw new Error('Unable to list Pokémon species.');
+const speciesIndex = await speciesResponse.json();
+if (!Array.isArray(speciesIndex.results) || !speciesIndex.results.length) throw new Error('Empty species catalog.');
 const jobs = [
-  ...Array.from({ length: 151 }, (_, i) => ({ group: 'pokemon', endpoint: 'pokemon-species', id: i + 1 })),
+  ...speciesIndex.results.map(species => ({ group: 'pokemon', endpoint: 'pokemon-species', id: Number(species.url.match(/\/(\d+)\/$/)?.[1]) })),
   ...Array.from({ length: 18 }, (_, i) => ({ group: 'types', endpoint: 'type', id: i + 1 })),
   ...Array.from({ length: 6 }, (_, i) => ({ group: 'stats', endpoint: 'stat', id: i + 1 })),
 ];

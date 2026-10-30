@@ -11,7 +11,7 @@ export interface Pokemon {
   image: string | null;
   sprite: string | null;
   gameSprites: Record<GameId, { front: string | null; back: string | null }>;
-  historicalArtworks?: Record<HistoricalArtworkId, string | null>;
+  historicalArtworks?: Partial<Record<HistoricalArtworkId, string | null>>;
   height: number;
   weight: number;
   stats: { id: StatId; value: number }[];
