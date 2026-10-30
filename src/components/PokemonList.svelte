@@ -4,48 +4,50 @@
   import type { IllustrationId } from '../lib/metadata';
   import { filterAndSortPokemon } from '../lib/analysis';
   import PokemonCard from './PokemonCard.svelte';
+  import { language, t } from '../lib/i18n';
+  import { imageName } from '../lib/localization';
   let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void } = $props();
   let query = $state('');
   let order = $state<PokemonOrder>('number-asc');
   let searchInput: HTMLInputElement;
-  const results = $derived(filterAndSortPokemon(pokemon, query, order));
+  const results = $derived(filterAndSortPokemon(pokemon, query, order, $language));
 </script>
 
 <section class="pokemon-section" id="pokemon-section" aria-labelledby="pokemon-title">
-  <div class="section-heading"><h2 id="pokemon-title">Los Pokémon de tu selección</h2><span class="badge pokemon-count" id="pokemon-count" role="status" aria-live="polite">{hasSelection ? (query.trim() ? `${results.length} de ${pokemon.length} Pokémon` : pokemon.length + ' Pokémon') : 'Sin selección'}</span></div>
-  <p class="description">{view === 'legacy' ? 'Coinciden con al menos uno de sus tipos originales de Gen I. Cada Pokémon aparece una sola vez. Pulsa una tarjeta para ver su ficha.' : 'Coinciden con al menos uno de los tipos seleccionados. Cada Pokémon aparece una sola vez. Pulsa una tarjeta para ver su ficha.'}</p>
+  <div class="section-heading"><h2 id="pokemon-title">{$t('pokemonList')}</h2><span class="badge pokemon-count" id="pokemon-count" role="status" aria-live="polite">{hasSelection ? $t(query.trim() ? 'filteredCount' : 'pokemonCount', { count: results.length, total: pokemon.length }) : $t('noSelection')}</span></div>
+  <p class="description">{$t(view === 'legacy' ? 'listLegacyHelp' : 'listHelp')}</p>
   <div class="pokemon-toolbar">
     <div class="pokemon-search">
-      <label for="pokemon-search">Buscar en la selección</label>
+      <label for="pokemon-search">{$t('search')}</label>
       <div class="search-field">
-        <input class="input" id="pokemon-search" type="search" bind:this={searchInput} bind:value={query} disabled={!hasSelection} placeholder="Nombre o número, ej. Pikachu o #025" aria-describedby="pokemon-search-help" autocomplete="off"/>
-        {#if query}<button class="btn btn-ghost btn-sm" type="button" disabled={!hasSelection} onclick={() => { query = ''; searchInput.focus(); }} aria-label="Limpiar búsqueda">×</button>{/if}
+        <input class="input" id="pokemon-search" type="search" bind:this={searchInput} bind:value={query} disabled={!hasSelection} placeholder={$t('searchPlaceholder')} aria-describedby="pokemon-search-help" autocomplete="off"/>
+        {#if query}<button class="btn btn-ghost btn-sm" type="button" disabled={!hasSelection} onclick={() => { query = ''; searchInput.focus(); }} aria-label={$t('clearSearch')}>×</button>{/if}
       </div>
     </div>
     <div class="pokemon-order">
-      <label for="pokemon-order">Ordenar por</label>
+      <label for="pokemon-order">{$t('sort')}</label>
       <select class="select" id="pokemon-order" bind:value={order} disabled={!hasSelection}>
-        <option value="number-asc">Número: menor a mayor</option>
-        <option value="number-desc">Número: mayor a menor</option>
-        <option value="name-asc">Nombre: A–Z</option>
-        <option value="name-desc">Nombre: Z–A</option>
+        <option value="number-asc">{$t('numberAsc')}</option>
+        <option value="number-desc">{$t('numberDesc')}</option>
+        <option value="name-asc">{$t('nameAsc')}</option>
+        <option value="name-desc">{$t('nameDesc')}</option>
       </select>
     </div>
     <div class="pokemon-illustration">
-      <label for="illustration-set">Ilustraciones</label>
+      <label for="illustration-set">{$t('illustrations')}</label>
       <select class="select" id="illustration-set" value={illustration} onchange={event => onIllustrationChange(event.currentTarget.value as IllustrationId)} aria-describedby="illustration-filter-help">
-        {#each ILLUSTRATIONS as option (option.id)}<option value={option.id}>{option.name}</option>{/each}
+        {#each ILLUSTRATIONS as option (option.id)}<option value={option.id}>{imageName(option.id, $language)}</option>{/each}
       </select>
     </div>
   </div>
-  <p class="list-help" id="pokemon-search-help">{hasSelection ? 'La búsqueda filtra este listado. Los gráficos siguen mostrando la distribución de los tipos seleccionados sobre los 151 Pokémon.' : 'Selecciona uno o más tipos para buscar entre sus Pokémon. Puedes elegir «Todos» para explorar Kanto completo.'}</p>
-  <p class="list-help" id="illustration-filter-help">La ilustración elegida se aplica a todas las tarjetas y al abrir una ficha. Dentro de cada ficha puedes compararlas.</p>
-  {#if illustration !== 'current' && pokemon.some(entry => entry.historicalArtworks === undefined)}<p class="list-help">Las ilustraciones históricas se cargarán al actualizar los datos.</p>{/if}
+  <p class="list-help" id="pokemon-search-help">{$t(hasSelection ? 'searchHelp' : 'selectHelp')}</p>
+  <p class="list-help" id="illustration-filter-help">{$t('illustrationHelp')}</p>
+  {#if illustration !== 'current' && pokemon.some(entry => entry.historicalArtworks === undefined)}<p class="list-help">{$t('historicalPending')}</p>{/if}
   {#if results.length}
     <ul class="pokemon-grid" id="pokemon-grid" aria-labelledby="pokemon-title">
       {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/></li>{/each}
     </ul>
   {:else}
-    <div class="pokemon-empty" id="pokemon-empty"><strong>{hasSelection ? 'Ningún Pokémon coincide con estos filtros.' : 'Tu selección, con nombre y cara.'}</strong><p>{hasSelection ? (query.trim() ? 'Prueba otro nombre o número, limpia la búsqueda o amplía los tipos seleccionados.' : 'Prueba otro tipo o cambia entre los tipos actuales y los originales de Gen I.') : 'Selecciona un tipo para descubrir sus Pokémon.'}</p></div>
+    <div class="pokemon-empty" id="pokemon-empty"><strong>{$t(hasSelection ? 'noMatches' : 'emptyList')}</strong><p>{$t(hasSelection ? query.trim() ? 'searchAgain' : 'typesAgain' : 'selectToDiscover')}</p></div>
   {/if}
 </section>

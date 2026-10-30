@@ -1,12 +1,15 @@
 import { TYPES, TYPE_BY_ID } from './metadata';
 import type { TypeId } from './metadata';
 import type { Analysis, ChartGroup, Pokemon, PokemonOrder, ViewMode } from './model';
+import { LOCALES, pokemonAliases, pokemonName, translate, typeName } from './localization';
+import type { Language } from './localization';
+export { pokemonName } from './localization';
 
 export function visibleTypes(pokemon: Pokemon, view: ViewMode): TypeId[] {
   return view === 'legacy' ? pokemon.legacyTypes : pokemon.types;
 }
 
-export function analyzePokemon(pokemon: readonly Pokemon[], selected: ReadonlySet<TypeId>, view: ViewMode): Analysis {
+export function analyzePokemon(pokemon: readonly Pokemon[], selected: ReadonlySet<TypeId>, view: ViewMode, language: Language = 'es-419'): Analysis {
   const result: Analysis = { total: pokemon.length, matches: [], groups: [], details: [], remaining: pokemon.length };
   if (!selected.size || !pokemon.length) return result;
 
@@ -19,7 +22,7 @@ export function analyzePokemon(pokemon: readonly Pokemon[], selected: ReadonlySe
     if (matches.length) result.matches.push(entry);
     if (!groups.has(key)) groups.set(key, {
       key, types: matches, count: 0,
-      label: matches.length ? matches.map(type => TYPE_BY_ID[type].name).join(' + ') : 'Otros Pokémon',
+      label: matches.length ? matches.map(type => typeName(type, language)).join(' + ') : translate(language, 'otherPokemon'),
       color: groupColor(matches),
     });
     groups.get(key)!.count++;
@@ -50,22 +53,17 @@ export function piePath(start: number, fraction: number): string {
   return `M 180 180 L ${point(start)} A 154 154 0 ${fraction > .5 ? 1 : 0} 1 ${point(start + fraction)} Z`;
 }
 
-export function percentage(count: number, total: number): string {
-  return (total ? count / total * 100 : 0).toLocaleString('es-CL', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' %';
+export function percentage(count: number, total: number, language: Language = 'es-419'): string {
+  return (total ? count / total * 100 : 0).toLocaleString(LOCALES[language], { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + (language.startsWith('es') ? ' %' : '%');
 }
 
-const SPECIAL_NAMES = new Map([['nidoran-f', 'Nidoran ♀'], ['nidoran-m', 'Nidoran ♂'], ['mr-mime', 'Mr. Mime'], ['farfetchd', 'Farfetch’d']]);
-export function pokemonName(name: string): string {
-  return SPECIAL_NAMES.get(name) || name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
-}
+const searchText = (text: string) => text.normalize('NFKC').normalize('NFD').replace(/(\p{Script=Latin})\p{M}+/gu, '$1').normalize('NFC').toLowerCase().replace(/♀/g, 'f').replace(/♂/g, 'm').replace(/[^\p{L}\p{N}]/gu, '');
 
-const nameOrder = new Intl.Collator('es', { sensitivity: 'base' });
-const searchText = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/♀/g, 'f').replace(/♂/g, 'm').replace(/[^a-z0-9]/g, '');
-
-export function filterAndSortPokemon(pokemon: readonly Pokemon[], query: string, order: PokemonOrder): Pokemon[] {
+export function filterAndSortPokemon(pokemon: readonly Pokemon[], query: string, order: PokemonOrder, language: Language = 'es-419'): Pokemon[] {
   const term = searchText(query);
   const id = /^\d+$/.test(term) ? Number(term) : null;
-  const matches = pokemon.filter(entry => !term || (id === null ? searchText(pokemonName(entry.name)).includes(term) : entry.id === id));
+  const matches = pokemon.filter(entry => !term || (id === null ? pokemonAliases(entry.name).some(name => searchText(name).includes(term)) : entry.id === id));
   const direction = order.endsWith('desc') ? -1 : 1;
-  return matches.sort((a, b) => direction * (order.startsWith('number') ? a.id - b.id : nameOrder.compare(pokemonName(a.name), pokemonName(b.name)) || a.id - b.id));
+  const nameOrder = new Intl.Collator(LOCALES[language], { sensitivity: 'base' });
+  return matches.sort((a, b) => direction * (order.startsWith('number') ? a.id - b.id : nameOrder.compare(pokemonName(a.name, language), pokemonName(b.name, language)) || a.id - b.id));
 }

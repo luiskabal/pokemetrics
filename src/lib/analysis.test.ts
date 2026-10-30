@@ -93,8 +93,8 @@ describe('presentación de resultados', () => {
   });
 
   it('presenta correctamente los nombres especiales de Kanto', () => {
-    expect(pokemonName('nidoran-f')).toBe('Nidoran ♀');
-    expect(pokemonName('nidoran-m')).toBe('Nidoran ♂');
+    expect(pokemonName('nidoran-f')).toBe('Nidoran♀');
+    expect(pokemonName('nidoran-m')).toBe('Nidoran♂');
     expect(pokemonName('mr-mime')).toBe('Mr. Mime');
     expect(pokemonName('farfetchd')).toBe('Farfetch’d');
     expect(pokemonName('bulbasaur')).toBe('Bulbasaur');

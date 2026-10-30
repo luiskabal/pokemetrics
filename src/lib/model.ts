@@ -35,6 +35,5 @@ export interface Analysis {
 
 export interface LoadState {
   status: 'loading' | 'refreshing' | 'ready' | 'cached' | 'error';
-  message: string;
   completed: number;
 }
