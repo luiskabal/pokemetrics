@@ -6,7 +6,7 @@
   import PokemonCard from './PokemonCard.svelte';
   import { language, t } from '../lib/i18n';
   import { imageName, statName } from '../lib/localization';
-  let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen, query = $bindable(''), segmentLabel, onClearSegment }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; query?: string; segmentLabel: string | null; onClearSegment: () => void } = $props();
+  let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen, query = $bindable(''), segmentLabel, onClearSegment, compareIds, onCompare }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; query?: string; segmentLabel: string | null; onClearSegment: () => void; compareIds: number[]; onCompare: (id: number) => void } = $props();
   let order = $state<PokemonOrder>('number-asc');
   let searchInput: HTMLInputElement;
   const statOptions = $derived(view === 'legacy' ? GEN_I_STATS : STATS);
@@ -56,7 +56,7 @@
   {#if illustration !== 'current' && pokemon.some(entry => entry.historicalArtworks === undefined)}<p class="list-help">{$t('historicalPending')}</p>{/if}
   {#if results.length}
     <ul class="pokemon-grid" id="pokemon-grid" aria-labelledby="pokemon-title">
-      {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/></li>{/each}
+      {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/><div class="card-actions"><button class="btn btn-sm" type="button" data-compare={entry.id} aria-pressed={compareIds.includes(entry.id)} disabled={compareIds.length === 4 && !compareIds.includes(entry.id)} onclick={() => onCompare(entry.id)}>{$t(compareIds.includes(entry.id) ? 'inComparison' : 'compare')}</button></div></li>{/each}
     </ul>
   {:else}
     <div class="pokemon-empty" id="pokemon-empty"><strong>{$t(hasSelection ? 'noMatches' : 'emptyList')}</strong><p>{$t(hasSelection ? query.trim() ? 'searchAgain' : 'typesAgain' : 'selectToDiscover')}</p></div>

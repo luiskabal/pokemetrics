@@ -267,6 +267,24 @@
 .connection-progress { display: block; width: 220px; max-width: 100%; height: 4px; margin-top: 10px; }
 .cache-updated { margin-top: 5px; color: var(--muted); font-size: 10px; }
 .tip-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.pokemon-grid > li { display: flex; flex-direction: column; gap: 8px; }
+.pokemon-grid .pokemon-card { flex: 1; height: auto; }
+.card-actions { display: flex; gap: 6px; }
+.card-actions .btn { flex: 1; min-width: 0; height: auto; white-space: normal; font-size: 11px; }
+.card-actions [aria-pressed="true"] { background: var(--green); color: white; }
+.compare-tray { position: fixed; z-index: 5; bottom: 14px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding: 12px; border: 2px solid #a3b18b; background: #354c32; color: white; box-shadow: 0 3px 15px #0003; font-size: 12px; }
+html:has(dialog[open]) .compare-tray { display: none; }
+.comparison-dialog { width: min(1000px, calc(100% - 24px)); }
+.comparison-content { position: relative; padding: 28px; }
+.comparison-content > h2 { padding-right: 40px; }
+.comparison-scroll { overflow-x: auto; }
+.comparison-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.comparison-table th, .comparison-table td { min-width: 130px; padding: 12px; border: 1px solid var(--line); text-align: center; }
+.comparison-table th:first-child { position: sticky; left: 0; z-index: 1; background: #f1f4e5; min-width: 110px; }
+.comparison-table thead img { width: 120px; height: 100px; object-fit: contain; margin: auto; }
+.comparison-table strong, .comparison-table small { display: block; }
+.comparison-table .pokemon-types { justify-content: center; }
+.compare-highest { background: #e0e8c6; font-weight: 750; }
 .legend-item { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; }
 .legend-label, .legend-value { display: block; }
 .legend-item[aria-pressed="true"], .bar-select[aria-pressed="true"] { background: #e7edd9; box-shadow: inset 3px 0 var(--green); }
