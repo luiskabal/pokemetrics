@@ -10,13 +10,12 @@
   import TypeIcon from './components/TypeIcon.svelte';
   import PokemonList from './components/PokemonList.svelte';
   import PokemonDialog from './components/PokemonDialog.svelte';
-  import ImageSelector from './components/ImageSelector.svelte';
 
   const initialCache = readCache();
   let pokemon = $state.raw<Pokemon[]>(initialCache?.pokemon ?? []);
   let savedAt = $state<number | null>(initialCache?.savedAt ?? null);
   let view = $state<ViewMode>('current');
-  let imageSet = $state<ImageSet>('artwork');
+  let imageSet = $state<ImageSet>('red-blue');
   let selectedTypes = $state<TypeId[]>([]);
   let selectedPokemonId = $state<number | null>(null);
   let loadState = $state<LoadState>({ status: 'loading', message: 'Conectando con PokéAPI…', completed: 0 });
@@ -94,11 +93,6 @@
       <p class="view-description">{legacy ? 'Tipos originales de Gen I, incluidos los dobles tipos.' : 'Tipos actuales, con coincidencias entre los tipos seleccionados.'}</p>
     </div>
 
-    <div class="image-controls">
-      <ImageSelector id="image-set" value={imageSet} onChange={value => imageSet = value}/>
-      <p>Elige los sprites del juego para las tarjetas y la ficha. Actual/Legacy controla la clasificación de tipos.</p>
-    </div>
-
     {#if loadState.status === 'refreshing'}
       <div class="alert alert-info app-notice" role="status"><span>Puedes explorar los datos disponibles mientras se actualizan en segundo plano.</span></div>
     {:else if loadState.status === 'error' || loadState.status === 'cached'}
@@ -112,7 +106,7 @@
     </section>
 
     <div class="workspace">
-      <TypeFilters {legacy} {selected} disabled={!pokemon.length} onToggle={toggleType} onAll={() => selectedTypes = availableTypes.map(type => type.id)} onClear={() => selectedTypes = []}/>
+      <TypeFilters {legacy} {selected} {imageSet} onImageSetChange={value => imageSet = value} disabled={!pokemon.length} onToggle={toggleType} onAll={() => selectedTypes = availableTypes.map(type => type.id)} onClear={() => selectedTypes = []}/>
       <div class="results">
         <DistributionChart {analysis} {active} {legacy}/>
         <aside class="explanation"><span class="tip-icon" aria-hidden="true">✧</span><p>
@@ -152,4 +146,4 @@
     <span class="footer-note">Hecho para explorar, un tipo a la vez.<br/>Primera generación · Formas originales</span>
   </footer>
 </div>
-<PokemonDialog pokemon={selectedPokemon} {view} {imageSet} onImageSetChange={value => imageSet = value} onClose={() => selectedPokemonId = null}/>
+<PokemonDialog pokemon={selectedPokemon} {view} defaultImageSet={imageSet} onClose={() => selectedPokemonId = null}/>

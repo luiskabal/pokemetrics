@@ -1,9 +1,10 @@
 <script lang="ts">
   import { LEGACY_TYPES, TYPES } from '../lib/metadata';
-  import type { TypeId } from '../lib/metadata';
+  import type { ImageSet, TypeId } from '../lib/metadata';
   import TypeIcon from './TypeIcon.svelte';
-  let { legacy, selected, disabled, onToggle, onAll, onClear }: {
-    legacy: boolean; selected: ReadonlySet<TypeId>; disabled: boolean;
+  import ImageSelector from './ImageSelector.svelte';
+  let { legacy, selected, imageSet, onImageSetChange, disabled, onToggle, onAll, onClear }: {
+    legacy: boolean; selected: ReadonlySet<TypeId>; imageSet: ImageSet; onImageSetChange: (value: ImageSet) => void; disabled: boolean;
     onToggle: (type: TypeId) => void; onAll: () => void; onClear: () => void;
   } = $props();
   const types = $derived(legacy ? LEGACY_TYPES : TYPES);
@@ -31,4 +32,8 @@
   <p class="filter-footnote"><span aria-hidden="true">ⓘ</span><span id="filter-note">{legacy
     ? 'Los 15 tipos originales, sin Hada, Acero ni Siniestro. Incluye ambos tipos de cada Pokémon en Gen I.'
     : 'Incluye tipos actuales como Hada y Acero. Siniestro no tiene Pokémon en esta generación.'}</span></p>
+  <div class="filter-images">
+    <ImageSelector id="image-set" value={imageSet} onChange={onImageSetChange}/>
+    <p class="image-scope-note">Se aplica a todas las tarjetas y a las fichas que abras. Actual/Legacy controla los tipos.</p>
+  </div>
 </aside>

@@ -6,7 +6,9 @@
   import PokemonImage from './PokemonImage.svelte';
   import TypeBadge from './TypeBadge.svelte';
   import ImageSelector from './ImageSelector.svelte';
-  let { pokemon, view, imageSet, onImageSetChange, onClose }: { pokemon: Pokemon | null; view: ViewMode; imageSet: ImageSet; onImageSetChange: (value: ImageSet) => void; onClose: () => void } = $props();
+  let { pokemon, view, defaultImageSet, onClose }: { pokemon: Pokemon | null; view: ViewMode; defaultImageSet: ImageSet; onClose: () => void } = $props();
+  let localImageSet = $state<ImageSet | null>(null);
+  const imageSet = $derived(localImageSet ?? defaultImageSet);
   let dialog: HTMLDialogElement;
   const types = $derived(pokemon ? visibleTypes(pokemon, view) : []);
   const type = $derived(types.length ? TYPE_BY_ID[types[0]] : null);
@@ -17,7 +19,7 @@
 </script>
 
 <dialog bind:this={dialog} class="pokemon-dialog" id="pokemon-dialog" aria-labelledby="pokemon-dialog-name" aria-describedby="pokemon-dialog-view"
-  onclose={onClose} onpointerdown={event => { if (event.target === dialog) dialog.close(); }}
+  onclose={() => { localImageSet = null; onClose(); }} onpointerdown={event => { if (event.target === dialog) dialog.close(); }}
   style:--pokemon-tint={type?.tint} style:--pokemon-color={type?.color}>
   {#if pokemon}
     <div class="dialog-content">
@@ -37,7 +39,8 @@
           <h2 class="dialog-name" id="pokemon-dialog-name">{pokemonName(pokemon.name)}</h2>
           <p class="dialog-type-caption" id="pokemon-dialog-view">{view === 'legacy' ? 'Tipos originales · Gen I' : 'Tipos actuales'}</p>
           <div class="pokemon-types">{#each types as type (type)}<TypeBadge {type}/>{/each}</div>
-          <ImageSelector id="dialog-image-set" value={imageSet} onChange={onImageSetChange}/>
+          <ImageSelector id="dialog-image-set" label="Imágenes de esta ficha" value={imageSet} onChange={value => localImageSet = value}/>
+          <p class="image-scope-note">Solo cambia esta ficha. Al volver a abrirla se usa el juego elegido en el filtro.</p>
           <dl class="physical-details"><div><dt>Altura</dt><dd id="pokemon-height">{(pokemon.height / 10).toLocaleString('es-CL')} m</dd></div><div><dt>Peso</dt><dd id="pokemon-weight">{(pokemon.weight / 10).toLocaleString('es-CL')} kg</dd></div></dl>
         </div>
       </div>
