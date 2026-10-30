@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyzePokemon, percentage, piePath, pokemonName } from './analysis';
+import { analyzePokemon, filterAndSortPokemon, percentage, piePath, pokemonName } from './analysis';
 import { LEGACY_TYPES, STATS, TYPES } from './metadata';
 import type { TypeId } from './metadata';
 import type { Pokemon } from './model';
@@ -98,5 +98,51 @@ describe('presentación de resultados', () => {
     expect(pokemonName('mr-mime')).toBe('Mr. Mime');
     expect(pokemonName('farfetchd')).toBe('Farfetch’d');
     expect(pokemonName('bulbasaur')).toBe('Bulbasaur');
+  });
+});
+
+describe('búsqueda y ordenamiento del listado', () => {
+  const entries = [
+    { ...pokemon(25, ['electric']), name: 'pikachu' },
+    { ...pokemon(122, ['psychic']), name: 'mr-mime' },
+    { ...pokemon(1, ['grass', 'poison']), name: 'bulbasaur' },
+    { ...pokemon(125, ['electric']), name: 'electabuzz' },
+    { ...pokemon(29, ['poison']), name: 'nidoran-f' },
+    { ...pokemon(32, ['poison']), name: 'nidoran-m' },
+    { ...pokemon(83, ['normal', 'flying']), name: 'farfetchd' },
+  ];
+
+  it('busca nombres parciales sin distinguir mayúsculas, acentos ni puntuación', () => {
+    for (const query of ['  PIKÁ  ', 'pikachu']) expect(filterAndSortPokemon(entries, query, 'number-asc').map(entry => entry.id)).toEqual([25]);
+    expect(filterAndSortPokemon(entries, 'Mr. Mime', 'number-asc').map(entry => entry.id)).toEqual([122]);
+    expect(filterAndSortPokemon(entries, 'Farfetch’d', 'number-asc').map(entry => entry.id)).toEqual([83]);
+  });
+
+  it('busca el número exacto con o sin # y ceros iniciales', () => {
+    for (const query of ['25', '#025', '025', '  #25  ']) expect(filterAndSortPokemon(entries, query, 'number-asc').map(entry => entry.id)).toEqual([25]);
+    expect(filterAndSortPokemon(entries, '0', 'number-asc')).toEqual([]);
+    expect(filterAndSortPokemon(entries, '#152', 'number-asc')).toEqual([]);
+  });
+
+  it('reconoce los nombres y símbolos de ambas formas de Nidoran', () => {
+    expect(filterAndSortPokemon(entries, 'nidoran', 'number-asc').map(entry => entry.id)).toEqual([29, 32]);
+    for (const query of ['nidoran-f', 'Nidoran ♀']) expect(filterAndSortPokemon(entries, query, 'number-asc').map(entry => entry.id)).toEqual([29]);
+    for (const query of ['nidoran-m', 'Nidoran ♂']) expect(filterAndSortPokemon(entries, query, 'number-asc').map(entry => entry.id)).toEqual([32]);
+  });
+
+  it('ordena por número o nombre en ambos sentidos sin modificar la selección original', () => {
+    const originalIds = entries.map(entry => entry.id);
+    expect(filterAndSortPokemon(entries, '', 'number-asc').map(entry => entry.id)).toEqual([1, 25, 29, 32, 83, 122, 125]);
+    expect(filterAndSortPokemon(entries, '', 'number-desc').map(entry => entry.id)).toEqual([125, 122, 83, 32, 29, 25, 1]);
+    expect(filterAndSortPokemon(entries, '', 'name-asc').map(entry => entry.id)).toEqual([1, 125, 83, 122, 29, 32, 25]);
+    expect(filterAndSortPokemon(entries, '', 'name-desc').map(entry => entry.id)).toEqual([25, 32, 29, 122, 83, 125, 1]);
+    expect(entries.map(entry => entry.id)).toEqual(originalIds);
+  });
+
+  it('mantiene la búsqueda dentro de la selección y admite resultados vacíos', () => {
+    expect(filterAndSortPokemon(entries.filter(entry => entry.types.includes('grass')), 'pikachu', 'number-asc')).toEqual([]);
+    expect(filterAndSortPokemon([], '', 'name-asc')).toEqual([]);
+    expect(filterAndSortPokemon(entries, '   ', 'number-asc')).toHaveLength(entries.length);
+    expect(filterAndSortPokemon(entries, 'missingno', 'number-asc')).toEqual([]);
   });
 });

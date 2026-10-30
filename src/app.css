@@ -44,7 +44,7 @@
     button, a { -webkit-tap-highlight-color: transparent; }
     button { font: inherit; cursor: pointer; }
     button:disabled { cursor: wait; }
-    button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 3px solid #208c70; outline-offset: 4px; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 3px solid #208c70; outline-offset: 4px; }
     button, a, .type-button { touch-action: manipulation; }
     a { color: inherit; }
     [hidden] { display: none !important; }
@@ -153,6 +153,18 @@
     .details-caption { color: var(--muted); font-size: 10px; margin: 5px 0 0; }
     .pokemon-section { margin-top: 30px; padding-top: 25px; border-top: 1px solid var(--line); }
     .pokemon-count { background: #e9eee2; color: #4b6741; border-radius: 7px; padding: 5px 10px; font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .pokemon-section > .section-heading { flex-wrap: wrap; }
+    .pokemon-toolbar { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; }
+    .pokemon-toolbar label { display: block; margin-bottom: 6px; color: #536a48; font-size: 11px; font-weight: 600; }
+    .pokemon-search { flex: 1 1 280px; min-width: 0; }
+    .search-field { display: flex; align-items: center; gap: 6px; }
+    .search-field .input { flex: 1; min-width: 0; width: 100%; }
+    .search-field input::-webkit-search-cancel-button { appearance: none; }
+    .search-field button { flex-shrink: 0; font-size: 19px; }
+    .pokemon-order { flex: 0 1 235px; min-width: 0; }
+    .pokemon-toolbar .input, .pokemon-toolbar .select { width: 100%; height: 42px; min-height: 42px; border: 1px solid #d8dfd0; border-radius: 9px; background-color: #fff; color: var(--ink); font-size: 12px; }
+    .pokemon-toolbar :disabled { cursor: default; opacity: .55; }
+    .list-help { margin: 8px 0 0; color: var(--muted); font-size: 10px; }
     .pokemon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 15px; padding: 0; margin: 18px 0 0; list-style: none; }
     .pokemon-grid li { min-width: 0; }
     .pokemon-card { width: 100%; height: 100%; padding: 11px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: var(--ink); text-align: left; transition: transform .15s, box-shadow .15s, border-color .15s; }

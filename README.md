@@ -31,6 +31,8 @@ npm run preview
 
 Actual conserva los tipos actuales y Legacy conserva todos los tipos originales de Gen I, incluidos los secundarios. Los tipos históricos se reconstruyen con `past_types` de PokéAPI; si no hay cambios registrados, se usan `types`. Ambas vistas separan las intersecciones en los gráficos de torta y barras, de modo que sus grupos, incluidos los otros Pokémon, siempre suman 151 sin duplicar especies. El selector de gráfico conserva los tipos seleccionados; las barras usan una escala fija de 0 a 100 % de Kanto. Los totales individuales por tipo pueden superponerse y no deben sumarse. Las estadísticas de las fichas son actuales.
 
+El listado permite buscar dentro de los tipos seleccionados por nombre o número exacto de Pokédex (`25` o `#025`) y ordenar por número o nombre en ambos sentidos. La búsqueda ignora mayúsculas, acentos y puntuación, y reconoce `nidoran-f`, `nidoran-m`, `♀` y `♂`. Estos controles solo afectan al listado; los gráficos mantienen su base de 151 Pokémon. Elige **Todos** para buscar en todo Kanto.
+
 ## Publicación
 
 GitHub Actions comprueba tipos, ejecuta las pruebas y compila antes de publicar `dist/` en GitHub Pages. La fuente de Pages debe ser **GitHub Actions**. Los cambios en `main` se publican automáticamente en <https://luiskabal.github.io/pokemetrics/>.

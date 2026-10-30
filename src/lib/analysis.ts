@@ -1,6 +1,6 @@
 import { TYPES, TYPE_BY_ID } from './metadata';
 import type { TypeId } from './metadata';
-import type { Analysis, ChartGroup, Pokemon, ViewMode } from './model';
+import type { Analysis, ChartGroup, Pokemon, PokemonOrder, ViewMode } from './model';
 
 export function visibleTypes(pokemon: Pokemon, view: ViewMode): TypeId[] {
   return view === 'legacy' ? pokemon.legacyTypes : pokemon.types;
@@ -57,4 +57,15 @@ export function percentage(count: number, total: number): string {
 const SPECIAL_NAMES = new Map([['nidoran-f', 'Nidoran ♀'], ['nidoran-m', 'Nidoran ♂'], ['mr-mime', 'Mr. Mime'], ['farfetchd', 'Farfetch’d']]);
 export function pokemonName(name: string): string {
   return SPECIAL_NAMES.get(name) || name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+}
+
+const nameOrder = new Intl.Collator('es', { sensitivity: 'base' });
+const searchText = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/♀/g, 'f').replace(/♂/g, 'm').replace(/[^a-z0-9]/g, '');
+
+export function filterAndSortPokemon(pokemon: readonly Pokemon[], query: string, order: PokemonOrder): Pokemon[] {
+  const term = searchText(query);
+  const id = /^\d+$/.test(term) ? Number(term) : null;
+  const matches = pokemon.filter(entry => !term || (id === null ? searchText(pokemonName(entry.name)).includes(term) : entry.id === id));
+  const direction = order.endsWith('desc') ? -1 : 1;
+  return matches.sort((a, b) => direction * (order.startsWith('number') ? a.id - b.id : nameOrder.compare(pokemonName(a.name), pokemonName(b.name)) || a.id - b.id));
 }

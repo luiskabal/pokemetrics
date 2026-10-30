@@ -1,6 +1,7 @@
 import type { StatId, TypeId } from './metadata';
 
 export type ViewMode = 'current' | 'legacy';
+export type PokemonOrder = 'number-asc' | 'number-desc' | 'name-asc' | 'name-desc';
 export interface Pokemon {
   id: number;
   name: string;
