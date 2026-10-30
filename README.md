@@ -60,6 +60,10 @@ Cada generación tiene una identidad visual: Gen I conserva el tema Game Boy/Pok
 
 ## Publicación
 
+**Descargar CSV** exporta exactamente los Pokémon visibles, respetando búsqueda, segmento, favoritos, orden, idioma y vista Actual/Legacy. Incluye ambos tipos, medidas en metros/kilogramos y cinco estadísticas en Gen I Legacy o seis en las otras vistas. Un historial pendiente deja valores vacíos y se identifica en su propia columna. El CSV usa UTF-8 con BOM y números decimales con punto; en hojas de cálculo se puede importar seleccionando coma como delimitador.
+
+**Descargar PNG/SVG** guarda la torta o las barras con leyenda, cantidades, porcentajes, tipos seleccionados, generación y vista. Siempre incluye la distribución completa y Otros Pokémon; la búsqueda y los favoritos no cambian su denominador. SVG conserva la calidad al ampliar; PNG tiene fondo blanco y una altura máxima de 4.096 píxeles. Todas las exportaciones se generan localmente con los datos cargados, sin consultas adicionales ni dependencias nuevas.
+
 GitHub Actions comprueba tipos, ejecuta las pruebas y compila antes de publicar `dist/` en GitHub Pages. La fuente de Pages debe ser **GitHub Actions**. Los cambios en `main` se publican automáticamente en <https://luiskabal.github.io/pokemetrics/>.
 
 No se requieren claves, backend ni variables de entorno. La primera carga necesita conexión a PokéAPI; las imágenes usan el repositorio público de sprites de PokéAPI. La caché `pokemetrics-kanto-v5` guarda los tipos originales y los enlaces de sprites por juego; las copias anteriores se descartan y requieren una carga inicial para renovar los datos. Los archivos locales `index_v*.html` quedan fuera de Git y del despliegue.

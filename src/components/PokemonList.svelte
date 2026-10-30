@@ -3,6 +3,7 @@
   import { GEN_I_STATS, STATS } from '../lib/metadata';
   import type { IllustrationId } from '../lib/metadata';
   import { filterAndSortPokemon } from '../lib/analysis';
+  import { downloadFile, pokemonCsv } from '../lib/export';
   import PokemonCard from './PokemonCard.svelte';
   import FavoriteButton from './FavoriteButton.svelte';
   import { generation } from '../lib/generation-state';
@@ -11,12 +12,19 @@
   import { imageName, statName } from '../lib/localization';
   let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen, query = $bindable(''), order = $bindable<PokemonOrder>('number-asc'), onOrderChange, segmentLabel, onClearSegment, compareIds, onCompare, favorites, onlyFavorites, onFavorite, onOnlyFavorites }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; query?: string; order?: PokemonOrder; onOrderChange: () => void; segmentLabel: string | null; onClearSegment: () => void; compareIds: number[]; onCompare: (id: number) => void; favorites: ReadonlySet<number>; onlyFavorites: boolean; onFavorite: (id: number) => void; onOnlyFavorites: () => void } = $props();
   let searchInput: HTMLInputElement;
+  let exportStatus = $state<'exportReady' | 'exportError' | null>(null);
   const statOptions = $derived(view === 'legacy' && $generation === 1 ? GEN_I_STATS : STATS);
   const results = $derived(filterAndSortPokemon(pokemon, query, order, $language, view, $generation));
   $effect(() => {
     const field = order.slice(0, order.lastIndexOf('-'));
     if (!['number', 'name', 'height', 'weight', ...statOptions.map(stat => stat.id)].includes(field)) order = 'number-asc';
   });
+  function exportCsv() {
+    try {
+      downloadFile(new Blob([pokemonCsv(results, { generation: $generation, view, language: $language })], { type: 'text/csv;charset=utf-8' }), `pokemetrics-gen-${$generation}-${view}.csv`);
+      exportStatus = 'exportReady';
+    } catch { exportStatus = 'exportError'; }
+  }
 </script>
 
 <section class="pokemon-section" id="pokemon-section" aria-labelledby="pokemon-title">
@@ -58,6 +66,8 @@
   <p class="list-help">{$t('sortHelp')}</p>
   <p class="list-help" id="illustration-filter-help">{$t('illustrationHelp')}</p>
   {#if illustration !== 'current' && pokemon.some(entry => entry.historicalArtworks === undefined)}<p class="list-help">{$t('historicalPending')}</p>{/if}
+  <div class="export-controls"><button class="btn btn-sm" id="export-csv" type="button" disabled={!results.length} onclick={exportCsv} aria-describedby="csv-help">{$t('exportCsv')}</button><span role="status">{exportStatus ? $t(exportStatus) : ''}</span></div>
+  <p class="list-help" id="csv-help">{$t('exportCsvHelp')}</p>
   {#if results.length}
     <ul class="pokemon-grid" id="pokemon-grid" aria-labelledby="pokemon-title">
       {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/><div class="card-actions"><button class="btn btn-sm" type="button" data-compare={entry.id} aria-pressed={compareIds.includes(entry.id)} disabled={compareIds.length === 4 && !compareIds.includes(entry.id)} onclick={() => onCompare(entry.id)}>{$t(compareIds.includes(entry.id) ? 'inComparison' : 'compare')}</button><FavoriteButton pokemon={entry} active={favorites.has(entry.id)} onToggle={onFavorite}/></div></li>{/each}

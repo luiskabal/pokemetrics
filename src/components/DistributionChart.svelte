@@ -2,6 +2,8 @@
   import { percentage, piePath } from '../lib/analysis';
   import type { Analysis } from '../lib/model';
   import { language, t } from '../lib/i18n';
+  import { generation } from '../lib/generation-state';
+  import { chartPng, chartSvg, downloadFile } from '../lib/export';
   let { analysis, active, legacy, selectedSegment, onSegment, chart, onChartChange }: { analysis: Analysis; active: boolean; legacy: boolean; selectedSegment: string | null; onSegment: (key: string) => void; chart: 'pie' | 'bars'; onChartChange: (chart: 'pie' | 'bars') => void } = $props();
   const slices = $derived.by(() => {
     let start = 0;
@@ -13,6 +15,20 @@
     });
   });
   const summary = $derived(analysis.groups.map(group => `${group.label}: ${$t('countPercent', { count: group.count, percent: percentage(group.count, analysis.total, $language) })}`).join('. '));
+  let exporting = $state(false);
+  let exportStatus = $state<'exportReady' | 'exportError' | null>(null);
+  async function exportChart(format: 'png' | 'svg') {
+    exporting = true;
+    exportStatus = null;
+    const view = legacy ? 'legacy' : 'current';
+    const filename = `pokemetrics-gen-${$generation}-${view}-${chart}.${format}`;
+    try {
+      const svg = chartSvg(analysis, chart, { generation: $generation, view, language: $language }, selectedSegment);
+      downloadFile(format === 'png' ? await chartPng(svg) : new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), filename);
+      exportStatus = 'exportReady';
+    } catch { exportStatus = 'exportError'; }
+    finally { exporting = false; }
+  }
 </script>
 
 <section class="card chart-card" aria-labelledby="chart-title">
@@ -69,6 +85,8 @@
     </div>
   </div>
   {/if}
+  <div class="export-controls" aria-busy={exporting}><button class="btn btn-sm" id="export-png" type="button" disabled={!active || exporting} onclick={() => exportChart('png')} aria-describedby="chart-export-help">{$t('exportPng')}</button><button class="btn btn-sm" id="export-svg" type="button" disabled={!active || exporting} onclick={() => exportChart('svg')} aria-describedby="chart-export-help">{$t('exportSvg')}</button><span role="status">{exporting ? $t('exportBusy') : exportStatus ? $t(exportStatus) : ''}</span></div>
+  <p class="list-help" id="chart-export-help">{$t('exportChartHelp')}</p>
   <div class="chart-stats">
     <div class="chart-stat"><div class="chart-stat-label">{$t('uniquePokemon')}</div><div class="chart-stat-value"><span id="matched">{active ? analysis.matches.length : '—'}</span>{#if active}<small>{$t('outOf', { total: analysis.total })}</small>{/if}</div></div>
     <div class="chart-stat"><div class="chart-stat-label">{$t('coverage')}</div><div class="chart-stat-value" id="coverage">{active ? percentage(analysis.matches.length, analysis.total, $language) : '—'}</div></div>
