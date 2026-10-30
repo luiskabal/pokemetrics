@@ -201,6 +201,15 @@
     .pokemon-artwork .sprite-frame img { width: 100%; max-width: 160px; height: 128px; object-fit: contain; }
     .sprite-frame figcaption { color: var(--muted); font-size: 10px; }
     .pokemon-hero .image-selector { margin-top: 14px; }
+    .illustration-gallery { padding: 22px 28px; border-top: 1px solid var(--line); background: #fbfcf8; }
+    .illustration-gallery h3 { margin: 0; font-size: 15px; font-weight: 650; }
+    .illustration-stage { display: grid; place-items: center; height: 240px; margin: 14px 0; }
+    .illustration-stage img { display: block; width: 100%; max-width: 300px; height: 240px; object-fit: contain; }
+    .illustration-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+    .illustration-options button { height: auto; min-height: 36px; padding: 7px 10px; border: 1px solid #d8dfd0; border-radius: 7px; background: #fff; color: #536a48; font-size: 10px; box-shadow: none; }
+    .illustration-options button[aria-pressed="true"] { border-color: var(--green); background: var(--green); color: #fff; }
+    .illustration-caption { margin: 9px 0 0; text-align: center; color: var(--muted); font-size: 10px; }
+    .illustration-unavailable { margin: 18px 0; color: var(--muted); text-align: center; font-size: 12px; }
     .dialog-number { margin: 0 0 5px; font: 11px ui-monospace, monospace; color: #74846b; letter-spacing: 1.5px; }
     .dialog-name { margin: 0 0 12px; font-size: 30px; letter-spacing: -1px; line-height: 1.2; }
     .dialog-type-caption { font-size: 10px; color: var(--muted); margin: 0 0 6px; }

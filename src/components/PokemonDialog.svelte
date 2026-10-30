@@ -6,6 +6,7 @@
   import PokemonImage from './PokemonImage.svelte';
   import TypeBadge from './TypeBadge.svelte';
   import ImageSelector from './ImageSelector.svelte';
+  import IllustrationGallery from './IllustrationGallery.svelte';
   let { pokemon, view, defaultImageSet, onClose }: { pokemon: Pokemon | null; view: ViewMode; defaultImageSet: ImageSet; onClose: () => void } = $props();
   let localImageSet = $state<ImageSet | null>(null);
   const imageSet = $derived(localImageSet ?? defaultImageSet);
@@ -44,6 +45,7 @@
           <dl class="physical-details"><div><dt>Altura</dt><dd id="pokemon-height">{(pokemon.height / 10).toLocaleString('es-CL')} m</dd></div><div><dt>Peso</dt><dd id="pokemon-weight">{(pokemon.weight / 10).toLocaleString('es-CL')} kg</dd></div></dl>
         </div>
       </div>
+      <IllustrationGallery {pokemon}/>
       <section class="pokemon-stats" aria-labelledby="pokemon-stats-title">
         <h3 id="pokemon-stats-title">Estadísticas base actuales</h3><p class="stat-note">Datos actuales de PokéAPI, también al consultar la vista Legacy.</p>
         <dl class="stat-list" id="pokemon-stats">

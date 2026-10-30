@@ -9,7 +9,13 @@ function rawPokemon(id = 1) {
     past_types: [] as { generation: { url: string }; types: { slot: number; type: { name: string } }[] }[],
     sprites: {
       front_default: 'https://example.com/sprite.png',
-      other: { 'official-artwork': { front_default: 'https://example.com/artwork.png' } },
+      other: { 'official-artwork': {
+        front_default: 'https://example.com/artwork.png',
+        versions: { 'generation-i': {
+          'red-and-blue': { front_default: 'https://example.com/illustrations/red-blue.png' },
+          'red-and-green': { front_default: 'https://example.com/illustrations/red-green.png' },
+        } },
+      } },
       versions: { 'generation-i': {
         'red-green-japan': { front_default: 'https://example.com/red-green/front.png', back_default: 'https://example.com/red-green/back.png' },
         'red-blue': { front_default: 'https://example.com/red-blue/front.png', back_default: 'https://example.com/red-blue/back.png' },
@@ -39,6 +45,37 @@ describe('normalización de PokéAPI', () => {
       'red-blue': { front: 'https://example.com/red-blue/front.png', back: 'https://example.com/red-blue/back.png' },
       yellow: { front: 'https://example.com/yellow/front.png', back: 'https://example.com/yellow/back.png' },
     });
+  });
+
+  it('extrae las ilustraciones históricas sin confundirlas con los sprites del juego', () => {
+    const entry = normalizePokemon(rawPokemon());
+    expect(entry.historicalArtworks).toEqual({
+      'red-and-blue': 'https://example.com/illustrations/red-blue.png',
+      'red-and-green': 'https://example.com/illustrations/red-green.png',
+    });
+    expect(entry.image).toBe('https://example.com/artwork.png');
+    expect(entry.gameSprites['red-blue'].front).toBe('https://example.com/red-blue/front.png');
+  });
+
+  it('admite ilustraciones históricas ausentes y conserva la compatibilidad con la caché v5', () => {
+    const raw = rawPokemon();
+    const entry = normalizePokemon({ ...raw, sprites: { ...raw.sprites, other: { 'official-artwork': { front_default: raw.sprites.other['official-artwork'].front_default } } } });
+    expect(entry.historicalArtworks).toEqual({ 'red-and-blue': null, 'red-and-green': null });
+    const oldPokemon = dataset().map(({ historicalArtworks, ...pokemon }) => pokemon);
+    expect(isPokemonDataset(oldPokemon)).toBe(true);
+    const savedAt = 1_700_000_000_000;
+    vi.stubGlobal('localStorage', { getItem: () => JSON.stringify({ pokemon: oldPokemon, savedAt }) });
+    expect(readCache()?.savedAt).toBe(savedAt);
+  });
+
+  it('rechaza ilustraciones con enlaces inseguros o estructura corrupta', () => {
+    const raw = rawPokemon();
+    raw.sprites.other['official-artwork'].versions['generation-i']['red-and-blue'].front_default = 'javascript:alert(1)';
+    expect(() => normalizePokemon(raw)).toThrow();
+    const pokemon = dataset();
+    for (const historicalArtworks of [null, {}, { 'red-and-blue': 3, 'red-and-green': null }, { 'red-and-blue': null, 'red-and-green': 'http://example.com/art.png' }]) {
+      expect(isPokemonDataset([{ ...pokemon[0], historicalArtworks }, ...pokemon.slice(1)])).toBe(false);
+    }
   });
 
   it('marca sprites ausentes sin sustituirlos por imágenes de otro juego', () => {

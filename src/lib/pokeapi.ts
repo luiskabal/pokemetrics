@@ -1,4 +1,4 @@
-import { GAMES, LEGACY_TYPES, STATS, TYPE_BY_ID } from './metadata';
+import { GAMES, HISTORICAL_ARTWORKS, LEGACY_TYPES, STATS, TYPE_BY_ID } from './metadata';
 import type { TypeId } from './metadata';
 import type { Pokemon } from './model';
 
@@ -13,12 +13,13 @@ const validGameSprites = (value: unknown): value is Pokemon['gameSprites'] => re
   const sprites = value[game.id];
   return record(sprites) && imageUrl(sprites.front) && imageUrl(sprites.back);
 });
+const validHistoricalArtworks = (value: unknown) => value === undefined || (record(value) && HISTORICAL_ARTWORKS.every(artwork => imageUrl(value[artwork.id])));
 
 function isPokemon(entry: unknown): entry is Pokemon {
     if (!record(entry) || !positiveInteger(entry.id) || entry.id > 151 ||
       typeof entry.name !== 'string' || !entry.name.length ||
       !validTypes(entry.types) || !validTypes(entry.legacyTypes) || !entry.legacyTypes.every(id => LEGACY_TYPES.some(type => type.id === id)) ||
-      !imageUrl(entry.image) || !imageUrl(entry.sprite) || !validGameSprites(entry.gameSprites) ||
+      !imageUrl(entry.image) || !imageUrl(entry.sprite) || !validGameSprites(entry.gameSprites) || !validHistoricalArtworks(entry.historicalArtworks) ||
       !positiveInteger(entry.height) || !positiveInteger(entry.weight) ||
       !Array.isArray(entry.stats) || entry.stats.length !== STATS.length ||
       !entry.stats.every(stat => record(stat) && STATS.some(item => item.id === stat.id) && positiveInteger(stat.value)) ||
@@ -57,6 +58,12 @@ export function normalizePokemon(value: unknown): Pokemon {
   const originalTypes = history ? readTypes(history.types) : types;
   const other = value.sprites.other;
   const artwork = record(other) ? other['official-artwork'] : undefined;
+  const artworkVersions = record(artwork) ? artwork.versions : undefined;
+  const generationArtwork = record(artworkVersions) ? artworkVersions['generation-i'] : undefined;
+  const historicalArtworks = Object.fromEntries(HISTORICAL_ARTWORKS.map(version => {
+    const image = record(generationArtwork) ? generationArtwork[version.id] : undefined;
+    return [version.id, record(image) ? image.front_default ?? null : null];
+  }));
   const versions = value.sprites.versions;
   const generation = record(versions) ? versions['generation-i'] : undefined;
   const gameSprites = Object.fromEntries(GAMES.map(game => {
@@ -71,6 +78,7 @@ export function normalizePokemon(value: unknown): Pokemon {
     image: record(artwork) ? artwork.front_default ?? null : null,
     sprite: value.sprites.front_default ?? null,
     gameSprites,
+    historicalArtworks,
     height: value.height, weight: value.weight,
     stats: value.stats.map(stat => {
       if (!record(stat) || !record(stat.stat)) throw new Error('Estadística incompleta.');
