@@ -1,7 +1,8 @@
-import type { StatId, TypeId } from './metadata';
+import type { GameId, StatId, TypeId } from './metadata';
 
 export type ViewMode = 'current' | 'legacy';
 export type PokemonOrder = 'number-asc' | 'number-desc' | 'name-asc' | 'name-desc';
+export type SpriteSide = 'front' | 'back';
 export interface Pokemon {
   id: number;
   name: string;
@@ -9,6 +10,7 @@ export interface Pokemon {
   legacyTypes: TypeId[];
   image: string | null;
   sprite: string | null;
+  gameSprites: Record<GameId, { front: string | null; back: string | null }>;
   height: number;
   weight: number;
   stats: { id: StatId; value: number }[];

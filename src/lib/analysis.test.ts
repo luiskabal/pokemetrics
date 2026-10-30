@@ -5,7 +5,7 @@ import type { TypeId } from './metadata';
 import type { Pokemon } from './model';
 
 function pokemon(id: number, types: TypeId[], legacyTypes = types): Pokemon {
-  return { id, name: 'pokemon-' + id, types, legacyTypes, image: null, sprite: null, height: 7, weight: 69, stats: STATS.map(stat => ({ id: stat.id, value: 45 })) };
+  return { id, name: 'pokemon-' + id, types, legacyTypes, image: null, sprite: null, gameSprites: { 'red-green-japan': { front: null, back: null }, 'red-blue': { front: null, back: null }, yellow: { front: null, back: null } }, height: 7, weight: 69, stats: STATS.map(stat => ({ id: stat.id, value: 45 })) };
 }
 
 const sample = [

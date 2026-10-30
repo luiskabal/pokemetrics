@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { LEGACY_TYPES, TYPES, TYPE_BY_ID } from './lib/metadata';
-  import type { TypeId } from './lib/metadata';
+  import type { ImageSet, TypeId } from './lib/metadata';
   import type { LoadState, Pokemon, ViewMode } from './lib/model';
   import { analyzePokemon, percentage } from './lib/analysis';
   import { fetchKanto, readCache, writeCache } from './lib/pokeapi';
@@ -10,11 +10,13 @@
   import TypeIcon from './components/TypeIcon.svelte';
   import PokemonList from './components/PokemonList.svelte';
   import PokemonDialog from './components/PokemonDialog.svelte';
+  import ImageSelector from './components/ImageSelector.svelte';
 
   const initialCache = readCache();
   let pokemon = $state.raw<Pokemon[]>(initialCache?.pokemon ?? []);
   let savedAt = $state<number | null>(initialCache?.savedAt ?? null);
   let view = $state<ViewMode>('current');
+  let imageSet = $state<ImageSet>('artwork');
   let selectedTypes = $state<TypeId[]>([]);
   let selectedPokemonId = $state<number | null>(null);
   let loadState = $state<LoadState>({ status: 'loading', message: 'Conectando con PokéAPI…', completed: 0 });
@@ -92,6 +94,11 @@
       <p class="view-description">{legacy ? 'Tipos originales de Gen I, incluidos los dobles tipos.' : 'Tipos actuales, con coincidencias entre los tipos seleccionados.'}</p>
     </div>
 
+    <div class="image-controls">
+      <ImageSelector id="image-set" value={imageSet} onChange={value => imageSet = value}/>
+      <p>Elige los sprites del juego para las tarjetas y la ficha. Actual/Legacy controla la clasificación de tipos.</p>
+    </div>
+
     {#if loadState.status === 'refreshing'}
       <div class="alert alert-info app-notice" role="status"><span>Puedes explorar los datos disponibles mientras se actualizan en segundo plano.</span></div>
     {:else if loadState.status === 'error' || loadState.status === 'cached'}
@@ -128,7 +135,7 @@
         {/if}
       </div>
     </div>
-    <PokemonList pokemon={analysis.matches} {view} hasSelection={selected.size > 0} onOpen={entry => selectedPokemonId = entry.id}/>
+    <PokemonList pokemon={analysis.matches} {view} {imageSet} hasSelection={selected.size > 0} onOpen={entry => selectedPokemonId = entry.id}/>
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
   </main>
 
@@ -145,4 +152,4 @@
     <span class="footer-note">Hecho para explorar, un tipo a la vez.<br/>Primera generación · Formas originales</span>
   </footer>
 </div>
-<PokemonDialog pokemon={selectedPokemon} {view} onClose={() => selectedPokemonId = null}/>
+<PokemonDialog pokemon={selectedPokemon} {view} {imageSet} onImageSetChange={value => imageSet = value} onClose={() => selectedPokemonId = null}/>

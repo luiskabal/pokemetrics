@@ -1,20 +1,24 @@
-import { LEGACY_TYPES, STATS, TYPE_BY_ID } from './metadata';
+import { GAMES, LEGACY_TYPES, STATS, TYPE_BY_ID } from './metadata';
 import type { TypeId } from './metadata';
 import type { Pokemon } from './model';
 
-export const CACHE_KEY = 'pokemetrics-kanto-v4';
+export const CACHE_KEY = 'pokemetrics-kanto-v5';
 const API = 'https://pokeapi.co/api/v2/';
 const record = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 const typeId = (value: unknown): value is TypeId => typeof value === 'string' && Object.hasOwn(TYPE_BY_ID, value);
 const validTypes = (value: unknown): value is TypeId[] => Array.isArray(value) && value.length >= 1 && value.length <= 2 && value.every(typeId) && new Set(value).size === value.length;
 const positiveInteger = (value: unknown): value is number => Number.isInteger(value) && Number(value) > 0;
 const imageUrl = (value: unknown) => value === null || (typeof value === 'string' && value.startsWith('https://'));
+const validGameSprites = (value: unknown): value is Pokemon['gameSprites'] => record(value) && GAMES.every(game => {
+  const sprites = value[game.id];
+  return record(sprites) && imageUrl(sprites.front) && imageUrl(sprites.back);
+});
 
 function isPokemon(entry: unknown): entry is Pokemon {
     if (!record(entry) || !positiveInteger(entry.id) || entry.id > 151 ||
       typeof entry.name !== 'string' || !entry.name.length ||
       !validTypes(entry.types) || !validTypes(entry.legacyTypes) || !entry.legacyTypes.every(id => LEGACY_TYPES.some(type => type.id === id)) ||
-      !imageUrl(entry.image) || !imageUrl(entry.sprite) ||
+      !imageUrl(entry.image) || !imageUrl(entry.sprite) || !validGameSprites(entry.gameSprites) ||
       !positiveInteger(entry.height) || !positiveInteger(entry.weight) ||
       !Array.isArray(entry.stats) || entry.stats.length !== STATS.length ||
       !entry.stats.every(stat => record(stat) && STATS.some(item => item.id === stat.id) && positiveInteger(stat.value)) ||
@@ -53,10 +57,20 @@ export function normalizePokemon(value: unknown): Pokemon {
   const originalTypes = history ? readTypes(history.types) : types;
   const other = value.sprites.other;
   const artwork = record(other) ? other['official-artwork'] : undefined;
+  const versions = value.sprites.versions;
+  const generation = record(versions) ? versions['generation-i'] : undefined;
+  const gameSprites = Object.fromEntries(GAMES.map(game => {
+    const sprites = record(generation) ? generation[game.id] : undefined;
+    return [game.id, {
+      front: record(sprites) ? sprites.front_default ?? null : null,
+      back: record(sprites) ? sprites.back_default ?? null : null,
+    }];
+  }));
   const entry = {
     id: value.id, name: value.name, types, legacyTypes: originalTypes,
     image: record(artwork) ? artwork.front_default ?? null : null,
     sprite: value.sprites.front_default ?? null,
+    gameSprites,
     height: value.height, weight: value.weight,
     stats: value.stats.map(stat => {
       if (!record(stat) || !record(stat.stat)) throw new Error('Estadística incompleta.');

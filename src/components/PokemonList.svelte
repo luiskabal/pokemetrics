@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { Pokemon, PokemonOrder, ViewMode } from '../lib/model';
+  import type { ImageSet } from '../lib/metadata';
   import { filterAndSortPokemon } from '../lib/analysis';
   import PokemonCard from './PokemonCard.svelte';
-  let { pokemon, view, hasSelection, onOpen }: { pokemon: Pokemon[]; view: ViewMode; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void } = $props();
+  let { pokemon, view, imageSet, hasSelection, onOpen }: { pokemon: Pokemon[]; view: ViewMode; imageSet: ImageSet; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void } = $props();
   let query = $state('');
   let order = $state<PokemonOrder>('number-asc');
   let searchInput: HTMLInputElement;
@@ -33,7 +34,7 @@
   <p class="list-help" id="pokemon-search-help">{hasSelection ? 'La búsqueda filtra este listado. Los gráficos siguen mostrando la distribución de los tipos seleccionados sobre los 151 Pokémon.' : 'Selecciona uno o más tipos para buscar entre sus Pokémon. Puedes elegir «Todos» para explorar Kanto completo.'}</p>
   {#if results.length}
     <ul class="pokemon-grid" id="pokemon-grid" aria-labelledby="pokemon-title">
-      {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {onOpen}/></li>{/each}
+      {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {imageSet} {onOpen}/></li>{/each}
     </ul>
   {:else}
     <div class="pokemon-empty" id="pokemon-empty"><strong>{hasSelection ? 'Ningún Pokémon coincide con estos filtros.' : 'Tu selección, con nombre y cara.'}</strong><p>{hasSelection ? (query.trim() ? 'Prueba otro nombre o número, limpia la búsqueda o amplía los tipos seleccionados.' : 'Prueba otro tipo o cambia entre los tipos actuales y los originales de Gen I.') : 'Selecciona un tipo para descubrir sus Pokémon.'}</p></div>

@@ -7,7 +7,15 @@ function rawPokemon(id = 1) {
     id, name: 'pokemon-' + id, height: 7, weight: 69,
     types: [{ slot: 2, type: { name: 'poison' } }, { slot: 1, type: { name: 'grass' } }],
     past_types: [] as { generation: { url: string }; types: { slot: number; type: { name: string } }[] }[],
-    sprites: { front_default: 'https://example.com/sprite.png', other: { 'official-artwork': { front_default: 'https://example.com/artwork.png' } } },
+    sprites: {
+      front_default: 'https://example.com/sprite.png',
+      other: { 'official-artwork': { front_default: 'https://example.com/artwork.png' } },
+      versions: { 'generation-i': {
+        'red-green-japan': { front_default: 'https://example.com/red-green/front.png', back_default: 'https://example.com/red-green/back.png' },
+        'red-blue': { front_default: 'https://example.com/red-blue/front.png', back_default: 'https://example.com/red-blue/back.png' },
+        yellow: { front_default: 'https://example.com/yellow/front.png', back_default: 'https://example.com/yellow/back.png' },
+      } },
+    },
     stats: STATS.map(stat => ({ stat: { name: stat.id }, base_stat: 45 })),
   };
 }
@@ -22,6 +30,35 @@ describe('normalización de PokéAPI', () => {
     expect(entry.legacyTypes).toEqual(['grass', 'poison']);
     expect(entry.image).toBe('https://example.com/artwork.png');
     expect(entry.stats).toHaveLength(6);
+  });
+
+  it('conserva los sprites frontal y trasero que entrega cada juego de Gen I', () => {
+    const entry = normalizePokemon(rawPokemon());
+    expect(entry.gameSprites).toEqual({
+      'red-green-japan': { front: 'https://example.com/red-green/front.png', back: 'https://example.com/red-green/back.png' },
+      'red-blue': { front: 'https://example.com/red-blue/front.png', back: 'https://example.com/red-blue/back.png' },
+      yellow: { front: 'https://example.com/yellow/front.png', back: 'https://example.com/yellow/back.png' },
+    });
+  });
+
+  it('marca sprites ausentes sin sustituirlos por imágenes de otro juego', () => {
+    const raw = rawPokemon();
+    const { versions, ...sprites } = raw.sprites;
+    const entry = normalizePokemon({ ...raw, sprites: { ...sprites, versions: { 'generation-i': { yellow: { front_default: versions['generation-i'].yellow.front_default, back_default: null } } } } });
+    expect(entry.gameSprites['red-blue']).toEqual({ front: null, back: null });
+    expect(entry.gameSprites['red-green-japan']).toEqual({ front: null, back: null });
+    expect(entry.gameSprites.yellow).toEqual({ front: 'https://example.com/yellow/front.png', back: null });
+    expect(normalizePokemon({ ...raw, sprites }).gameSprites.yellow).toEqual({ front: null, back: null });
+  });
+
+  it('rechaza enlaces inseguros o campos de sprites inválidos en la respuesta y la caché', () => {
+    const raw = rawPokemon();
+    raw.sprites.versions['generation-i'].yellow.front_default = 'javascript:alert(1)';
+    expect(() => normalizePokemon(raw)).toThrow();
+    const pokemon = dataset();
+    for (const yellow of [null, { front: false, back: null }, { front: null, back: 'http://example.com/back.png' }]) {
+      expect(isPokemonDataset([{ ...pokemon[0], gameSprites: { ...pokemon[0].gameSprites, yellow } }, ...pokemon.slice(1)])).toBe(false);
+    }
   });
 
   it('Clefairy vuelve a Normal en Gen I usando past_types', () => {
@@ -88,8 +125,8 @@ describe('consulta de la primera generación', () => {
   });
 });
 
-describe('caché con tipos históricos completos', () => {
-  it('acepta el formato v4 y rechaza especies repetidas o tipos históricos inválidos', () => {
+describe('caché con tipos históricos y sprites por juego', () => {
+  it('acepta el formato v5 y rechaza especies repetidas o tipos históricos inválidos', () => {
     const pokemon = dataset();
     expect(isPokemonDataset(pokemon)).toBe(true);
     expect(isPokemonDataset([null, ...pokemon.slice(1)])).toBe(false);
@@ -97,6 +134,13 @@ describe('caché con tipos históricos completos', () => {
     for (const legacyTypes of [[], ['fairy'], ['grass', 'steel'], ['grass', 'grass'], ['grass', 'poison', 'bug']]) {
       expect(isPokemonDataset([{ ...pokemon[0], legacyTypes }, ...pokemon.slice(1)])).toBe(false);
     }
+  });
+
+  it('rechaza copias antiguas sin sprites por juego para renovar los datos completos', () => {
+    const oldPokemon = dataset().map(({ gameSprites, ...entry }) => entry);
+    expect(isPokemonDataset(oldPokemon)).toBe(false);
+    vi.stubGlobal('localStorage', { getItem: () => JSON.stringify({ pokemon: oldPokemon, savedAt: 1_700_000_000_000 }) });
+    expect(readCache()).toBeNull();
   });
 
   it('rechaza la caché anterior que solo guardaba el primer tipo original', () => {

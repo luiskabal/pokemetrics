@@ -33,10 +33,12 @@ Actual conserva los tipos actuales y Legacy conserva todos los tipos originales 
 
 El listado permite buscar dentro de los tipos seleccionados por nombre o número exacto de Pokédex (`25` o `#025`) y ordenar por número o nombre en ambos sentidos. La búsqueda ignora mayúsculas, acentos y puntuación, y reconoce `nidoran-f`, `nidoran-m`, `♀` y `♂`. Estos controles solo afectan al listado; los gráficos mantienen su base de 151 Pokémon. Elige **Todos** para buscar en todo Kanto.
 
+**Imágenes por juego** permite elegir arte actual, Rojo/Verde de Japón, Rojo/Azul o Amarillo. Las tarjetas muestran el frente y las fichas muestran frente y espalda, con un selector sincronizado para cambiar de juego sin cerrar la ficha. Las imágenes originales se leen de `sprites.versions['generation-i']` de PokéAPI y se muestran como pixel art. Si un sprite falta o no carga, se indica que la imagen no está disponible, sin sustituirla por otro juego. Elegir imágenes no modifica los tipos, las estadísticas ni los filtros; Actual/Legacy sigue controlando la clasificación.
+
 ## Publicación
 
 GitHub Actions comprueba tipos, ejecuta las pruebas y compila antes de publicar `dist/` en GitHub Pages. La fuente de Pages debe ser **GitHub Actions**. Los cambios en `main` se publican automáticamente en <https://luiskabal.github.io/pokemetrics/>.
 
-No se requieren claves, backend ni variables de entorno. La primera carga necesita conexión a PokéAPI; las imágenes usan el repositorio público de sprites de PokéAPI. La caché `pokemetrics-kanto-v4` guarda todos los tipos originales; las copias anteriores que solo guardaban el primer tipo se descartan y requieren una carga inicial para renovar los datos. Los archivos locales `index_v*.html` quedan fuera de Git y del despliegue.
+No se requieren claves, backend ni variables de entorno. La primera carga necesita conexión a PokéAPI; las imágenes usan el repositorio público de sprites de PokéAPI. La caché `pokemetrics-kanto-v5` guarda los tipos originales y los enlaces de sprites por juego; las copias anteriores se descartan y requieren una carga inicial para renovar los datos. Los archivos locales `index_v*.html` quedan fuera de Git y del despliegue.
 
 Al abrir, una caché válida se muestra inmediatamente y se actualiza en segundo plano, conservando los filtros y la ficha abierta. La fecha de la última carga queda visible. El botón **Actualizar** permite repetir la consulta; si falla, los datos disponibles y su fecha se conservan. Las respuestas HTTP se revalidan con PokéAPI, y la caché local se reemplaza únicamente después de completar y validar las 151 especies. Las imágenes dependen de la caché HTTP del navegador y no se guardan en `localStorage`.
