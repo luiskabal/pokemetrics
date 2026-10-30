@@ -6,8 +6,7 @@
   import PokemonCard from './PokemonCard.svelte';
   import { language, t } from '../lib/i18n';
   import { imageName, statName } from '../lib/localization';
-  let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen, query = $bindable(''), segmentLabel, onClearSegment, compareIds, onCompare }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; query?: string; segmentLabel: string | null; onClearSegment: () => void; compareIds: number[]; onCompare: (id: number) => void } = $props();
-  let order = $state<PokemonOrder>('number-asc');
+  let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen, query = $bindable(''), order = $bindable<PokemonOrder>('number-asc'), onOrderChange, segmentLabel, onClearSegment, compareIds, onCompare }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; query?: string; order?: PokemonOrder; onOrderChange: () => void; segmentLabel: string | null; onClearSegment: () => void; compareIds: number[]; onCompare: (id: number) => void } = $props();
   let searchInput: HTMLInputElement;
   const statOptions = $derived(view === 'legacy' ? GEN_I_STATS : STATS);
   const results = $derived(filterAndSortPokemon(pokemon, query, order, $language, view));
@@ -31,7 +30,7 @@
     </div>
     <div class="pokemon-order">
       <label for="pokemon-order">{$t('sort')}</label>
-      <select class="select" id="pokemon-order" bind:value={order} disabled={!hasSelection}>
+      <select class="select" id="pokemon-order" bind:value={order} onchange={onOrderChange} disabled={!hasSelection}>
         <option value="number-asc">{$t('numberAsc')}</option>
         <option value="number-desc">{$t('numberDesc')}</option>
         <option value="name-asc">{$t('nameAsc')}</option>

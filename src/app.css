@@ -267,6 +267,10 @@
 .connection-progress { display: block; width: 220px; max-width: 100%; height: 4px; margin-top: 10px; }
 .cache-updated { margin-top: 5px; color: var(--muted); font-size: 10px; }
 .tip-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.share-control { min-width: 0; margin-top: 8px; }
+.share-control .btn { white-space: nowrap; }
+.share-fallback { display: block; max-width: 100%; font-size: 11px; margin-top: 6px; }
+.share-fallback .input { display: block; width: 100%; min-width: 0; }
 .pokemon-grid > li { display: flex; flex-direction: column; gap: 8px; }
 .pokemon-grid .pokemon-card { flex: 1; height: auto; }
 .card-actions { display: flex; gap: 6px; }

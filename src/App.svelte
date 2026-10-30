@@ -12,21 +12,30 @@
   import PokemonDialog from './components/PokemonDialog.svelte';
   import LanguageSelector from './components/LanguageSelector.svelte';
   import PokemonComparison from './components/PokemonComparison.svelte';
+  import ShareLink from './components/ShareLink.svelte';
   import { language, t } from './lib/i18n';
   import { LOCALES, pokemonName, saveLanguage, typeName } from './lib/localization';
+  import { explorationUrl, readExploration } from './lib/navigation';
+  import type { ExplorationState } from './lib/navigation';
+  import type { PokemonOrder } from './lib/model';
 
   const initialCache = readCache();
+  const initialLocation = readExploration(new URL(location.href), $language);
+  language.set(initialLocation.language);
   let pokemon = $state.raw<Pokemon[]>(initialCache?.pokemon ?? []);
   let savedAt = $state<number | null>(initialCache?.savedAt ?? null);
-  let view = $state<ViewMode>('current');
-  let imageSet = $state<ImageSet>('red-green-japan');
-  let illustration = $state<IllustrationId>('red-and-green');
-  let selectedTypes = $state<TypeId[]>([]);
-  let selectedSegment = $state<string | null>(null);
-  let query = $state('');
+  let view = $state<ViewMode>(initialLocation.view);
+  let imageSet = $state<ImageSet>(initialLocation.imageSet);
+  let illustration = $state<IllustrationId>(initialLocation.illustration);
+  let selectedTypes = $state<TypeId[]>(initialLocation.types);
+  let selectedSegment = $state<string | null>(initialLocation.segment);
+  let query = $state(initialLocation.query);
+  let order = $state<PokemonOrder>(initialLocation.order);
+  let chart = $state<'pie' | 'bars'>(initialLocation.chart);
+  let shareUrl = $state(location.href);
   let compareIds = $state<number[]>([]);
   let comparisonOpen = $state(false);
-  let selectedPokemonId = $state<number | null>(null);
+  let selectedPokemonId = $state<number | null>(initialLocation.pokemonId);
   let loadState = $state<LoadState>({ status: 'loading', completed: 0 });
   let controller: AbortController;
   const legacy = $derived(view === 'legacy');
@@ -39,7 +48,7 @@
   const comparedPokemon = $derived(compareIds.map(id => pokemon.find(entry => entry.id === id)!));
   const updating = $derived(loadState.status === 'loading' || loadState.status === 'refreshing');
   const savedDate = $derived(savedAt === null ? null : new Date(savedAt));
-  const selectedPokemon = $derived(selectedPokemonId === null ? null : pokemon.find(entry => entry.id === selectedPokemonId)!);
+  const selectedPokemon = $derived(pokemon.find(entry => entry.id === selectedPokemonId) ?? null);
   const announcement = $derived(active
     ? `${$t(legacy ? 'legacy' : 'current')}. ${$t('announcement', { count: analysis.matches.length, total: analysis.total, percent: percentage(analysis.matches.length, analysis.total, $language) })}`
     : $t('emptyAnnouncement'));
@@ -60,6 +69,27 @@
     saveLanguage($language);
   });
 
+  $effect(() => {
+    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language };
+    const url = explorationUrl(new URL(location.href), state).href;
+    if (url !== location.href) history.replaceState(null, '', url);
+    shareUrl = url;
+  });
+
+  function checkpoint(): void { history.pushState(null, '', location.href); }
+
+  function restoreLocation(): void {
+    const next = readExploration(new URL(location.href), $language);
+    view = next.view; selectedTypes = next.types; query = next.query; order = next.order; chart = next.chart;
+    selectedSegment = next.segment; selectedPokemonId = next.pokemonId; imageSet = next.imageSet; illustration = next.illustration;
+    language.set(next.language);
+  }
+
+  function openPokemon(id: number | null): void {
+    if (id === selectedPokemonId) return;
+    checkpoint(); selectedPokemonId = id;
+  }
+
   function toggleType(type: TypeId): void {
     changeTypes(selected.has(type) ? selectedTypes.filter(id => id !== type) : [...selectedTypes, type]);
   }
@@ -72,17 +102,21 @@
   }
 
   function changeTypes(types: TypeId[]): void {
+    checkpoint();
     selectedTypes = types;
     selectedSegment = null;
   }
 
   function selectSegment(key: string): void {
+    checkpoint();
     selectedSegment = selectedSegment === key ? null : key;
     query = '';
     document.getElementById('pokemon-section')!.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
   }
 
   function changeView(next: ViewMode): void {
+    if (view === next) return;
+    checkpoint();
     view = next;
     selectedSegment = null;
     if (next === 'legacy') selectedTypes = selectedTypes.filter(id => LEGACY_TYPES.some(type => type.id === id));
@@ -113,7 +147,8 @@
 
   onMount(() => {
     void load();
-    return () => controller.abort();
+    window.addEventListener('popstate', restoreLocation);
+    return () => { controller.abort(); window.removeEventListener('popstate', restoreLocation); };
   });
 </script>
 
@@ -139,6 +174,7 @@
         <button class="btn join-item" id="view-legacy" type="button" aria-pressed={legacy} onclick={() => changeView('legacy')}>{$t('legacy')}</button>
       </div>
       <p class="view-description">{$t(legacy ? 'legacyDescription' : 'currentDescription')}</p>
+      <ShareLink url={shareUrl} id="share-link"/>
     </div>
 
     {#if loadState.status === 'refreshing'}
@@ -154,9 +190,9 @@
     </section>
 
     <div class="workspace">
-      <TypeFilters {legacy} {selected} {imageSet} onImageSetChange={value => imageSet = value} disabled={!pokemon.length} onToggle={toggleType} onAll={() => changeTypes(availableTypes.map(type => type.id))} onClear={() => changeTypes([])}/>
+      <TypeFilters {legacy} {selected} {imageSet} onImageSetChange={value => { checkpoint(); imageSet = value; }} disabled={!pokemon.length} onToggle={toggleType} onAll={() => changeTypes(availableTypes.map(type => type.id))} onClear={() => changeTypes([])}/>
       <div class="results">
-        <DistributionChart {analysis} {active} {legacy} selectedSegment={segment?.key ?? null} onSegment={selectSegment}/>
+        <DistributionChart {analysis} {active} {legacy} {chart} onChartChange={value => { checkpoint(); chart = value; }} selectedSegment={segment?.key ?? null} onSegment={selectSegment}/>
         <aside class="explanation"><span class="tip-icon" aria-hidden="true">✧</span><p>
           {#if legacy}
             <strong>{$t('originalExplanationTitle')}</strong> {$t('originalExplanation', explanationValues)}
@@ -177,7 +213,7 @@
         {/if}
       </div>
     </div>
-    <PokemonList pokemon={listedPokemon} bind:query {compareIds} onCompare={toggleCompare} segmentLabel={segment?.label ?? null} onClearSegment={() => selectedSegment = null} {view} {illustration} onIllustrationChange={value => illustration = value} hasSelection={selected.size > 0} onOpen={entry => selectedPokemonId = entry.id}/>
+    <PokemonList pokemon={listedPokemon} bind:query bind:order onOrderChange={checkpoint} {compareIds} onCompare={toggleCompare} segmentLabel={segment?.label ?? null} onClearSegment={() => { checkpoint(); selectedSegment = null; }} {view} {illustration} onIllustrationChange={value => { checkpoint(); illustration = value; }} hasSelection={selected.size > 0} onOpen={entry => openPokemon(entry.id)}/>
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
   </main>
 
@@ -196,4 +232,4 @@
 </div>
 {#if compareIds.length}<aside class="compare-tray" aria-label={$t('compareTitle')}><span role="status">{$t('compareCount', { count: compareIds.length })}</span><button class="btn btn-sm" id="open-comparison" type="button" disabled={compareIds.length < 2} onclick={() => comparisonOpen = true}>{$t('compare')}</button><button class="btn btn-sm" type="button" onclick={() => compareIds = []}>{$t('clear')}</button></aside>{/if}
 <PokemonComparison pokemon={comparedPokemon} {view} {illustration} open={comparisonOpen} onClose={() => comparisonOpen = false} onRemove={toggleCompare}/>
-<PokemonDialog pokemon={selectedPokemon} {view} defaultImageSet={imageSet} defaultIllustration={illustration} onClose={() => selectedPokemonId = null}/>
+<PokemonDialog pokemon={selectedPokemon} {view} {shareUrl} defaultImageSet={imageSet} defaultIllustration={illustration} onClose={() => openPokemon(null)}/>

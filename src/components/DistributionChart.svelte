@@ -2,8 +2,7 @@
   import { percentage, piePath } from '../lib/analysis';
   import type { Analysis } from '../lib/model';
   import { language, t } from '../lib/i18n';
-  let { analysis, active, legacy, selectedSegment, onSegment }: { analysis: Analysis; active: boolean; legacy: boolean; selectedSegment: string | null; onSegment: (key: string) => void } = $props();
-  let chart = $state<'pie' | 'bars'>('pie');
+  let { analysis, active, legacy, selectedSegment, onSegment, chart, onChartChange }: { analysis: Analysis; active: boolean; legacy: boolean; selectedSegment: string | null; onSegment: (key: string) => void; chart: 'pie' | 'bars'; onChartChange: (chart: 'pie' | 'bars') => void } = $props();
   const slices = $derived.by(() => {
     let start = 0;
     return analysis.groups.map(group => {
@@ -20,8 +19,8 @@
   <div class="section-heading chart-heading">
     <h2 id="chart-title">{$t(legacy ? 'chartLegacy' : 'chartCurrent')}</h2>
     <div class="join view-switch chart-switch" role="group" aria-label={$t('chartKind')}>
-      <button class="btn join-item" id="chart-pie" type="button" aria-pressed={chart === 'pie'} onclick={() => chart = 'pie'}>{$t('pie')}</button>
-      <button class="btn join-item" id="chart-bars" type="button" aria-pressed={chart === 'bars'} onclick={() => chart = 'bars'}>{$t('bars')}</button>
+      <button class="btn join-item" id="chart-pie" type="button" aria-pressed={chart === 'pie'} onclick={() => onChartChange('pie')}>{$t('pie')}</button>
+      <button class="btn join-item" id="chart-bars" type="button" aria-pressed={chart === 'bars'} onclick={() => onChartChange('bars')}>{$t('bars')}</button>
     </div>
   </div>
   <p class="description chart-description" id="chart-caption">{$t(legacy ? 'chartLegacyCaption' : 'chartCaption')}</p>

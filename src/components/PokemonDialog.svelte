@@ -8,22 +8,25 @@
   import ImageSelector from './ImageSelector.svelte';
   import IllustrationGallery from './IllustrationGallery.svelte';
   import PokemonStats from './PokemonStats.svelte';
+  import ShareLink from './ShareLink.svelte';
   import { language, t } from '../lib/i18n';
   import { LOCALES } from '../lib/localization';
-  let { pokemon, view, defaultImageSet, defaultIllustration, onClose }: { pokemon: Pokemon | null; view: ViewMode; defaultImageSet: ImageSet; defaultIllustration: IllustrationId; onClose: () => void } = $props();
+  let { pokemon, view, defaultImageSet, defaultIllustration, onClose, shareUrl }: { pokemon: Pokemon | null; view: ViewMode; defaultImageSet: ImageSet; defaultIllustration: IllustrationId; onClose: () => void; shareUrl: string } = $props();
   let localImageSet = $state<ImageSet | null>(null);
   const imageSet = $derived(localImageSet ?? defaultImageSet);
   let dialog: HTMLDialogElement;
+  // close llega después: varias navegaciones rápidas pueden dejar más de un cierre de estado pendiente.
+  let pendingStateCloses = 0;
   const types = $derived(pokemon ? visibleTypes(pokemon, view) : []);
   const type = $derived(types.length ? TYPE_BY_ID[types[0]] : null);
   $effect(() => {
     if (pokemon) dialog.showModal();
-    else if (dialog.open) dialog.close();
+    else if (dialog.open) { pendingStateCloses++; dialog.close(); }
   });
 </script>
 
 <dialog bind:this={dialog} class="pokemon-dialog" id="pokemon-dialog" aria-labelledby="pokemon-dialog-name" aria-describedby="pokemon-dialog-view"
-  onclose={() => { localImageSet = null; onClose(); }} onpointerdown={event => { if (event.target === dialog) dialog.close(); }}
+  onclose={() => { localImageSet = null; if (pendingStateCloses) pendingStateCloses--; else onClose(); }} onpointerdown={event => { if (event.target === dialog) dialog.close(); }}
   style:--pokemon-tint={type?.tint} style:--pokemon-color={type?.color} style:--pokemon-ink={type?.ink}>
   {#if pokemon}
     <div class="dialog-content">
@@ -37,6 +40,7 @@
           <p class="dialog-type-caption" id="pokemon-dialog-view">{$t(view === 'legacy' ? 'originalTypes' : 'currentTypes')}</p>
           <div class="pokemon-types">{#each types as type (type)}<TypeBadge {type}/>{/each}</div>
           <dl class="physical-details"><div><dt>{$t('height')}</dt><dd id="pokemon-height">{(pokemon.height / 10).toLocaleString(LOCALES[$language])} m</dd></div><div><dt>{$t('weight')}</dt><dd id="pokemon-weight">{(pokemon.weight / 10).toLocaleString(LOCALES[$language])} kg</dd></div></dl>
+          <ShareLink url={shareUrl} id="share-pokemon"/>
         </div>
       </div>
       <details class="sprite-details">
