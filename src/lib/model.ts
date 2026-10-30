@@ -1,7 +1,7 @@
 import type { GameId, HistoricalArtworkId, HistoricalStatId, StatId, TypeId } from './metadata';
 
 export type ViewMode = 'current' | 'legacy';
-export type PokemonOrder = 'number-asc' | 'number-desc' | 'name-asc' | 'name-desc';
+export type PokemonOrder = `${'number' | 'name' | HistoricalStatId | 'height' | 'weight'}-${'asc' | 'desc'}`;
 export type SpriteSide = 'front' | 'back';
 export interface Pokemon {
   id: number;

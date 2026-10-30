@@ -102,6 +102,18 @@ describe('presentación de resultados', () => {
 });
 
 describe('búsqueda y ordenamiento del listado', () => {
+  it('ordena medidas y estadísticas históricas, sin sustituir datos pendientes por actuales', () => {
+    const entries = [
+      { ...pokemon(25, ['electric']), height: 4, weight: 60, stats: STATS.map(stat => ({ id: stat.id, value: stat.id === 'defense' ? 40 : 50 })), pastStats: [{ generation: 1, stats: [{ id: 'special' as const, value: 50 }, { id: 'defense' as const, value: 30 }] }] },
+      { ...pokemon(1, ['grass']), height: 7, weight: 69, stats: STATS.map(stat => ({ id: stat.id, value: 35 })), pastStats: [{ generation: 1, stats: [{ id: 'special' as const, value: 65 }] }] },
+      pokemon(2, ['grass']),
+    ];
+    expect(filterAndSortPokemon(entries, '', 'weight-desc').map(p => p.id)).toEqual([1, 2, 25]);
+    expect(filterAndSortPokemon(entries, '', 'height-asc').map(p => p.id)).toEqual([25, 1, 2]);
+    expect(filterAndSortPokemon(entries, '', 'defense-desc', 'es', 'current').map(p => p.id)).toEqual([2, 25, 1]);
+    expect(filterAndSortPokemon(entries, '', 'defense-desc', 'es', 'legacy').map(p => p.id)).toEqual([1, 25, 2]);
+    expect(filterAndSortPokemon(entries, '', 'special-asc', 'es', 'legacy').map(p => p.id)).toEqual([25, 1, 2]);
+  });
   const entries = [
     { ...pokemon(25, ['electric']), name: 'pikachu' },
     { ...pokemon(122, ['psychic']), name: 'mr-mime' },
