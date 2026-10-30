@@ -6,7 +6,7 @@ import type { PokemonOrder, ViewMode } from './model';
 
 export interface ExplorationState {
   view: ViewMode; types: TypeId[]; query: string; order: PokemonOrder; chart: 'pie' | 'bars';
-  segment: string | null; pokemonId: number | null; illustration: IllustrationId; imageSet: ImageSet; language: Language;
+  segment: string | null; pokemonId: number | null; illustration: IllustrationId; imageSet: ImageSet; language: Language; onlyFavorites: boolean;
 }
 
 export function readExploration(url: URL, fallbackLanguage: Language = 'es-419'): ExplorationState {
@@ -19,7 +19,7 @@ export function readExploration(url: URL, fallbackLanguage: Language = 'es-419')
   const rawSegment = p.get('segment');
   const segment = rawSegment === 'other' ? '' : rawSegment && rawSegment.split('+').length <= 2 && rawSegment.split('+').every(type => types.includes(type as TypeId)) ? [...new Set(rawSegment.split('+'))].sort().join('+') : null;
   return {
-    view, types, query: (p.get('q') ?? '').slice(0, 100),
+    view, types, onlyFavorites: p.get('fav') === '1', query: (p.get('q') ?? '').slice(0, 100),
     order: fields.some(field => order === `${field}-asc` || order === `${field}-desc`) ? order as PokemonOrder : 'number-asc',
     chart: p.get('chart') === 'bars' ? 'bars' : 'pie', segment: types.length ? segment : null,
     pokemonId: Number.isInteger(pokemonId) && pokemonId >= 1 && pokemonId <= 151 ? pokemonId : null,
@@ -32,6 +32,6 @@ export function readExploration(url: URL, fallbackLanguage: Language = 'es-419')
 export function explorationUrl(url: URL, state: ExplorationState): URL {
   const result = new URL(url);
   const values = { view: state.view === 'current' ? '' : state.view, types: [...state.types].sort().join(','), q: state.query, order: state.order === 'number-asc' ? '' : state.order, chart: state.chart === 'pie' ? '' : state.chart, segment: state.segment === null ? '' : state.segment || 'other', pokemon: state.pokemonId?.toString() ?? '', art: state.illustration === 'red-and-green' ? '' : state.illustration, game: state.imageSet === 'red-green-japan' ? '' : state.imageSet, lang: state.language };
-  for (const [key, value] of Object.entries(values)) { if (value) result.searchParams.set(key, value); else result.searchParams.delete(key); }
+  for (const [key, value] of Object.entries({ ...values, fav: state.onlyFavorites ? '1' : '' })) { if (value) result.searchParams.set(key, value); else result.searchParams.delete(key); }
   return result;
 }

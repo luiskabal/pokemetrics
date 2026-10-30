@@ -9,9 +9,10 @@
   import IllustrationGallery from './IllustrationGallery.svelte';
   import PokemonStats from './PokemonStats.svelte';
   import ShareLink from './ShareLink.svelte';
+  import FavoriteButton from './FavoriteButton.svelte';
   import { language, t } from '../lib/i18n';
   import { LOCALES } from '../lib/localization';
-  let { pokemon, view, defaultImageSet, defaultIllustration, onClose, shareUrl }: { pokemon: Pokemon | null; view: ViewMode; defaultImageSet: ImageSet; defaultIllustration: IllustrationId; onClose: () => void; shareUrl: string } = $props();
+  let { pokemon, view, defaultImageSet, defaultIllustration, onClose, shareUrl, isFavorite, onFavorite }: { pokemon: Pokemon | null; view: ViewMode; defaultImageSet: ImageSet; defaultIllustration: IllustrationId; onClose: () => void; shareUrl: string; isFavorite: boolean; onFavorite: (id: number) => void } = $props();
   let localImageSet = $state<ImageSet | null>(null);
   const imageSet = $derived(localImageSet ?? defaultImageSet);
   let dialog: HTMLDialogElement;
@@ -40,7 +41,7 @@
           <p class="dialog-type-caption" id="pokemon-dialog-view">{$t(view === 'legacy' ? 'originalTypes' : 'currentTypes')}</p>
           <div class="pokemon-types">{#each types as type (type)}<TypeBadge {type}/>{/each}</div>
           <dl class="physical-details"><div><dt>{$t('height')}</dt><dd id="pokemon-height">{(pokemon.height / 10).toLocaleString(LOCALES[$language])} m</dd></div><div><dt>{$t('weight')}</dt><dd id="pokemon-weight">{(pokemon.weight / 10).toLocaleString(LOCALES[$language])} kg</dd></div></dl>
-          <ShareLink url={shareUrl} id="share-pokemon"/>
+          <div class="detail-actions"><ShareLink url={shareUrl} id="share-pokemon"/><FavoriteButton {pokemon} active={isFavorite} onToggle={onFavorite}/></div>
         </div>
       </div>
       <details class="sprite-details">

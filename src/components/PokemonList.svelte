@@ -4,9 +4,10 @@
   import type { IllustrationId } from '../lib/metadata';
   import { filterAndSortPokemon } from '../lib/analysis';
   import PokemonCard from './PokemonCard.svelte';
+  import FavoriteButton from './FavoriteButton.svelte';
   import { language, t } from '../lib/i18n';
   import { imageName, statName } from '../lib/localization';
-  let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen, query = $bindable(''), order = $bindable<PokemonOrder>('number-asc'), onOrderChange, segmentLabel, onClearSegment, compareIds, onCompare }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; query?: string; order?: PokemonOrder; onOrderChange: () => void; segmentLabel: string | null; onClearSegment: () => void; compareIds: number[]; onCompare: (id: number) => void } = $props();
+  let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen, query = $bindable(''), order = $bindable<PokemonOrder>('number-asc'), onOrderChange, segmentLabel, onClearSegment, compareIds, onCompare, favorites, onlyFavorites, onFavorite, onOnlyFavorites }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; query?: string; order?: PokemonOrder; onOrderChange: () => void; segmentLabel: string | null; onClearSegment: () => void; compareIds: number[]; onCompare: (id: number) => void; favorites: ReadonlySet<number>; onlyFavorites: boolean; onFavorite: (id: number) => void; onOnlyFavorites: () => void } = $props();
   let searchInput: HTMLInputElement;
   const statOptions = $derived(view === 'legacy' ? GEN_I_STATS : STATS);
   const results = $derived(filterAndSortPokemon(pokemon, query, order, $language, view));
@@ -18,7 +19,8 @@
 
 <section class="pokemon-section" id="pokemon-section" aria-labelledby="pokemon-title">
   <div class="section-heading"><h2 id="pokemon-title">{$t('pokemonList')}</h2><span class="badge pokemon-count" id="pokemon-count" role="status" aria-live="polite">{hasSelection ? $t(query.trim() ? 'filteredCount' : 'pokemonCount', { count: results.length, total: pokemon.length }) : $t('noSelection')}</span></div>
-  <p class="description">{$t(segmentLabel ? 'segmentHelp' : view === 'legacy' ? 'listLegacyHelp' : 'listHelp')}</p>
+  <button class="btn btn-sm" id="only-favorites" type="button" aria-pressed={onlyFavorites} onclick={onOnlyFavorites}>{$t('myFavorites', { count: favorites.size })}</button>
+  <p class="description">{$t(onlyFavorites ? 'favoritesHelp' : segmentLabel ? 'segmentHelp' : view === 'legacy' ? 'listLegacyHelp' : 'listHelp')}</p>
   {#if segmentLabel}<div class="segment-notice"><strong>{$t('segmentSelected', { label: segmentLabel })}</strong><button class="btn btn-sm" id="clear-segment" type="button" onclick={onClearSegment}>{$t('clearSegment')}</button></div>{/if}
   <div class="pokemon-toolbar">
     <div class="pokemon-search">
@@ -55,7 +57,7 @@
   {#if illustration !== 'current' && pokemon.some(entry => entry.historicalArtworks === undefined)}<p class="list-help">{$t('historicalPending')}</p>{/if}
   {#if results.length}
     <ul class="pokemon-grid" id="pokemon-grid" aria-labelledby="pokemon-title">
-      {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/><div class="card-actions"><button class="btn btn-sm" type="button" data-compare={entry.id} aria-pressed={compareIds.includes(entry.id)} disabled={compareIds.length === 4 && !compareIds.includes(entry.id)} onclick={() => onCompare(entry.id)}>{$t(compareIds.includes(entry.id) ? 'inComparison' : 'compare')}</button></div></li>{/each}
+      {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/><div class="card-actions"><button class="btn btn-sm" type="button" data-compare={entry.id} aria-pressed={compareIds.includes(entry.id)} disabled={compareIds.length === 4 && !compareIds.includes(entry.id)} onclick={() => onCompare(entry.id)}>{$t(compareIds.includes(entry.id) ? 'inComparison' : 'compare')}</button><FavoriteButton pokemon={entry} active={favorites.has(entry.id)} onToggle={onFavorite}/></div></li>{/each}
     </ul>
   {:else}
     <div class="pokemon-empty" id="pokemon-empty"><strong>{$t(hasSelection ? 'noMatches' : 'emptyList')}</strong><p>{$t(hasSelection ? query.trim() ? 'searchAgain' : 'typesAgain' : 'selectToDiscover')}</p></div>

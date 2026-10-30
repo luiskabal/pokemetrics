@@ -276,6 +276,11 @@
 .card-actions { display: flex; gap: 6px; }
 .card-actions .btn { flex: 1; min-width: 0; height: auto; white-space: normal; font-size: 11px; }
 .card-actions [aria-pressed="true"] { background: var(--green); color: white; }
+.card-actions .favorite-button { flex: 0 0 34px; font-size: 19px; }
+.favorite-button[aria-pressed="true"] { color: #7a5b12; background: #f5e8b5; }
+.detail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+#only-favorites { margin-top: 10px; }
+#only-favorites[aria-pressed="true"] { background: var(--green); color: white; }
 .compare-tray { position: fixed; z-index: 5; bottom: 14px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding: 12px; border: 2px solid #a3b18b; background: #354c32; color: white; box-shadow: 0 3px 15px #0003; font-size: 12px; }
 html:has(dialog[open]) .compare-tray { display: none; }
 .comparison-dialog { width: min(1000px, calc(100% - 24px)); }

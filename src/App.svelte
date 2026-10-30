@@ -18,6 +18,7 @@
   import { explorationUrl, readExploration } from './lib/navigation';
   import type { ExplorationState } from './lib/navigation';
   import type { PokemonOrder } from './lib/model';
+  import { readFavorites, saveFavorites } from './lib/favorites';
 
   const initialCache = readCache();
   const initialLocation = readExploration(new URL(location.href), $language);
@@ -34,6 +35,9 @@
   let chart = $state<'pie' | 'bars'>(initialLocation.chart);
   let shareUrl = $state(location.href);
   let compareIds = $state<number[]>([]);
+  let favoriteIds = $state<number[]>(readFavorites());
+  let onlyFavorites = $state(initialLocation.onlyFavorites);
+  let favoriteSaveFailed = $state(false);
   let comparisonOpen = $state(false);
   let selectedPokemonId = $state<number | null>(initialLocation.pokemonId);
   let loadState = $state<LoadState>({ status: 'loading', completed: 0 });
@@ -44,7 +48,9 @@
   const analysis = $derived(analyzePokemon(pokemon, selected, view, $language));
   const active = $derived(selected.size > 0 && pokemon.length > 0);
   const segment = $derived(analysis.groups.find(group => group.key === selectedSegment));
-  const listedPokemon = $derived(segment ? pokemonInSegment(pokemon, selected, view, segment.key) : analysis.matches);
+  const favorites = $derived(new Set(favoriteIds));
+  const selectedList = $derived(segment ? pokemonInSegment(pokemon, selected, view, segment.key) : analysis.matches);
+  const listedPokemon = $derived(onlyFavorites ? (selected.size ? selectedList : pokemon).filter(entry => favorites.has(entry.id)) : selectedList);
   const comparedPokemon = $derived(compareIds.map(id => pokemon.find(entry => entry.id === id)!));
   const updating = $derived(loadState.status === 'loading' || loadState.status === 'refreshing');
   const savedDate = $derived(savedAt === null ? null : new Date(savedAt));
@@ -70,7 +76,7 @@
   });
 
   $effect(() => {
-    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language };
+    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites };
     const url = explorationUrl(new URL(location.href), state).href;
     if (url !== location.href) history.replaceState(null, '', url);
     shareUrl = url;
@@ -82,6 +88,7 @@
     const next = readExploration(new URL(location.href), $language);
     view = next.view; selectedTypes = next.types; query = next.query; order = next.order; chart = next.chart;
     selectedSegment = next.segment; selectedPokemonId = next.pokemonId; imageSet = next.imageSet; illustration = next.illustration;
+    onlyFavorites = next.onlyFavorites;
     language.set(next.language);
   }
 
@@ -99,6 +106,11 @@
       compareIds = compareIds.filter(value => value !== id);
       if (compareIds.length < 2) comparisonOpen = false;
     } else if (compareIds.length < 4) compareIds = [...compareIds, id];
+  }
+
+  function toggleFavorite(id: number): void {
+    favoriteIds = favorites.has(id) ? favoriteIds.filter(value => value !== id) : [...favoriteIds, id];
+    favoriteSaveFailed = !saveFavorites(favoriteIds);
   }
 
   function changeTypes(types: TypeId[]): void {
@@ -213,7 +225,8 @@
         {/if}
       </div>
     </div>
-    <PokemonList pokemon={listedPokemon} bind:query bind:order onOrderChange={checkpoint} {compareIds} onCompare={toggleCompare} segmentLabel={segment?.label ?? null} onClearSegment={() => { checkpoint(); selectedSegment = null; }} {view} {illustration} onIllustrationChange={value => { checkpoint(); illustration = value; }} hasSelection={selected.size > 0} onOpen={entry => openPokemon(entry.id)}/>
+    {#if favoriteSaveFailed}<p class="app-notice" role="status">{$t('favoritesSessionOnly')}</p>{/if}
+    <PokemonList pokemon={listedPokemon} bind:query bind:order onOrderChange={checkpoint} {favorites} {onlyFavorites} onFavorite={toggleFavorite} onOnlyFavorites={() => { checkpoint(); onlyFavorites = !onlyFavorites; }} {compareIds} onCompare={toggleCompare} segmentLabel={segment?.label ?? null} onClearSegment={() => { checkpoint(); selectedSegment = null; }} {view} {illustration} onIllustrationChange={value => { checkpoint(); illustration = value; }} hasSelection={selected.size > 0 || onlyFavorites} onOpen={entry => openPokemon(entry.id)}/>
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
   </main>
 
@@ -232,4 +245,4 @@
 </div>
 {#if compareIds.length}<aside class="compare-tray" aria-label={$t('compareTitle')}><span role="status">{$t('compareCount', { count: compareIds.length })}</span><button class="btn btn-sm" id="open-comparison" type="button" disabled={compareIds.length < 2} onclick={() => comparisonOpen = true}>{$t('compare')}</button><button class="btn btn-sm" type="button" onclick={() => compareIds = []}>{$t('clear')}</button></aside>{/if}
 <PokemonComparison pokemon={comparedPokemon} {view} {illustration} open={comparisonOpen} onClose={() => comparisonOpen = false} onRemove={toggleCompare}/>
-<PokemonDialog pokemon={selectedPokemon} {view} {shareUrl} defaultImageSet={imageSet} defaultIllustration={illustration} onClose={() => openPokemon(null)}/>
+<PokemonDialog pokemon={selectedPokemon} {view} {shareUrl} isFavorite={selectedPokemon !== null && favorites.has(selectedPokemon.id)} onFavorite={toggleFavorite} defaultImageSet={imageSet} defaultIllustration={illustration} onClose={() => openPokemon(null)}/>
