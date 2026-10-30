@@ -6,7 +6,7 @@
   import { analyzePokemon, percentage } from './lib/analysis';
   import { fetchKanto, readCache, writeCache } from './lib/pokeapi';
   import TypeFilters from './components/TypeFilters.svelte';
-  import PieChart from './components/PieChart.svelte';
+  import DistributionChart from './components/DistributionChart.svelte';
   import TypeIcon from './components/TypeIcon.svelte';
   import PokemonList from './components/PokemonList.svelte';
   import PokemonDialog from './components/PokemonDialog.svelte';
@@ -107,7 +107,7 @@
     <div class="workspace">
       <TypeFilters {legacy} {selected} disabled={!pokemon.length} onToggle={toggleType} onAll={() => selectedTypes = availableTypes.map(type => type.id)} onClear={() => selectedTypes = []}/>
       <div class="results">
-        <PieChart {analysis} {active} {legacy}/>
+        <DistributionChart {analysis} {active} {legacy}/>
         <aside class="explanation"><span class="tip-icon" aria-hidden="true">✧</span><p>
           {#if legacy}
             <strong>Tipos originales, un solo Pokémon.</strong> En Gen I ya existían los dobles tipos: Bulbasaur es Planta/Veneno y Charizard es Fuego/Volador. Si seleccionas ambos tipos, su coincidencia va en un segmento combinado. Cada Pokémon cuenta una vez y la torta completa suma 151, incluidos los otros Pokémon.

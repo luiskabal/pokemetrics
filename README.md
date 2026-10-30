@@ -22,14 +22,14 @@ npm run preview
 
 ## Organización
 
-- `src/components/`: filtros, torta, tarjetas, imágenes y ficha de Pokémon.
+- `src/components/`: filtros, gráficos de torta y barras, tarjetas, imágenes y ficha de Pokémon.
 - `src/lib/analysis.ts`: cálculos de porcentajes, intersecciones y resultados únicos.
 - `src/lib/pokeapi.ts`: consulta, validación de datos y caché del navegador.
 - `src/lib/metadata.ts`: colores, iconos, tipos y etiquetas.
 - `src/App.svelte`: estado de la página y composición de la interfaz.
 - `src/app.css`: tema visual y estilos compartidos.
 
-Actual conserva los tipos actuales y Legacy conserva todos los tipos originales de Gen I, incluidos los secundarios. Los tipos históricos se reconstruyen con `past_types` de PokéAPI; si no hay cambios registrados, se usan `types`. Ambas vistas separan las intersecciones en la torta, de modo que sus segmentos, incluidos los otros Pokémon, siempre suman 151 sin duplicar especies. Los totales individuales por tipo pueden superponerse y no deben sumarse. Las estadísticas de las fichas son actuales.
+Actual conserva los tipos actuales y Legacy conserva todos los tipos originales de Gen I, incluidos los secundarios. Los tipos históricos se reconstruyen con `past_types` de PokéAPI; si no hay cambios registrados, se usan `types`. Ambas vistas separan las intersecciones en los gráficos de torta y barras, de modo que sus grupos, incluidos los otros Pokémon, siempre suman 151 sin duplicar especies. El selector de gráfico conserva los tipos seleccionados; las barras usan una escala fija de 0 a 100 % de Kanto. Los totales individuales por tipo pueden superponerse y no deben sumarse. Las estadísticas de las fichas son actuales.
 
 ## Publicación
 

@@ -102,7 +102,9 @@
     .filter-footnote svg { margin-top: 2px; flex-shrink: 0; }
     .results { display: grid; gap: 17px; min-width: 0; }
     .chart-card { padding: 24px 26px 0; overflow: hidden; }
-    .chart-kind { font-size: 10px; color: #69806d; background: #f0f4ec; border: 1px solid #e4ebdd; border-radius: 6px; padding: 4px 8px; display: flex; gap: 5px; align-items: center; }
+    .chart-heading { flex-wrap: wrap; }
+    .chart-switch { padding: 3px; }
+    .chart-switch button { padding: 5px 9px; font-size: 11px; }
     .chart-description { margin-bottom: 0; }
     .chart-body { min-height: 341px; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(180px, .9fr); gap: 16px; align-items: center; padding: 12px 0 18px; }
     .chart-stage { position: relative; width: 100%; max-width: 338px; min-width: 0; justify-self: center; display: grid; place-items: center; aspect-ratio: 1; }
@@ -113,6 +115,16 @@
     .empty-chart { width: 83%; aspect-ratio: 1; border-radius: 50%; border: 1px dashed #d8ded3; background: repeating-conic-gradient(#f4f5ef 0deg 1deg, transparent 1deg 60deg), #fafbf7; display: grid; place-items: center; position: relative; }
     .empty-chart::after { content: ""; position: absolute; inset: 17px; border: 1px solid #eef0e7; border-radius: 50%; }
     .empty-chart svg { width: 73px; height: 73px; color: #c8d2c1; }
+    .empty-bars, .empty-bars::after { border-radius: 14px; }
+    .empty-bars { background: #fafbf7; }
+    .bar-chart { min-height: 341px; padding: 20px 0 24px; }
+    .bar-scale { margin: 0 0 12px; color: var(--muted); font-size: 10px; }
+    .bar-axis { display: flex; justify-content: space-between; margin-bottom: 15px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+    .bar-list { display: grid; gap: 17px; max-height: 420px; overflow-y: auto; scrollbar-width: thin; list-style: none; margin: 0; padding: 0 8px 4px 0; }
+    .bar-label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-bottom: 6px; font-size: 11px; font-weight: 550; }
+    .bar-value { color: var(--muted); font-size: 10px; font-weight: 400; font-variant-numeric: tabular-nums; }
+    .bar-track { height: 11px; border-radius: 4px; background: #f3f5ee; }
+    .bar-fill { display: block; height: 100%; border-radius: inherit; }
     .legend-empty { padding-right: 8px; }
     .empty-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: #eff3e9; color: #738963; font-size: 18px; margin-bottom: 13px; }
     .legend-empty h3 { margin: 0 0 8px; font-size: 16px; line-height: 1.4; font-weight: 600; letter-spacing: -.4px; }
@@ -199,7 +211,7 @@
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
 .view-switch button { height: auto; min-height: 0; }
-.type-chip, .chart-kind, .pokemon-count { height: auto; min-height: 0; }
+.type-chip, .pokemon-count { height: auto; min-height: 0; }
 .type-chip { border: 0; }
 .pokemon-card { display: block; }
 .text-button { height: auto; min-height: 0; box-shadow: none; }
