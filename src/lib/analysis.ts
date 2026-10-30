@@ -3,7 +3,7 @@ import type { TypeId } from './metadata';
 import type { Analysis, ChartGroup, Pokemon, ViewMode } from './model';
 
 export function visibleTypes(pokemon: Pokemon, view: ViewMode): TypeId[] {
-  return view === 'legacy' ? [pokemon.legacyType] : pokemon.types;
+  return view === 'legacy' ? pokemon.legacyTypes : pokemon.types;
 }
 
 export function analyzePokemon(pokemon: readonly Pokemon[], selected: ReadonlySet<TypeId>, view: ViewMode): Analysis {

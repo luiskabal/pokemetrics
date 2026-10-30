@@ -24,7 +24,7 @@
         <div class="pokemon-artwork">{#key pokemon.id}<PokemonImage {pokemon} eager/>{/key}</div>
         <div><p class="dialog-number">POKÉDEX · #{String(pokemon.id).padStart(3, '0')}</p>
           <h2 class="dialog-name" id="pokemon-dialog-name">{pokemonName(pokemon.name)}</h2>
-          <p class="dialog-type-caption" id="pokemon-dialog-view">{view === 'legacy' ? 'Primer tipo original · Gen I' : 'Tipos actuales'}</p>
+          <p class="dialog-type-caption" id="pokemon-dialog-view">{view === 'legacy' ? 'Tipos originales · Gen I' : 'Tipos actuales'}</p>
           <div class="pokemon-types">{#each types as type (type)}<TypeBadge {type}/>{/each}</div>
           <dl class="physical-details"><div><dt>Altura</dt><dd id="pokemon-height">{(pokemon.height / 10).toLocaleString('es-CL')} m</dd></div><div><dt>Peso</dt><dd id="pokemon-weight">{(pokemon.weight / 10).toLocaleString('es-CL')} kg</dd></div></dl>
         </div>

@@ -2,18 +2,19 @@ import { LEGACY_TYPES, STATS, TYPE_BY_ID } from './metadata';
 import type { TypeId } from './metadata';
 import type { Pokemon } from './model';
 
-export const CACHE_KEY = 'pokemetrics-kanto-v3';
+export const CACHE_KEY = 'pokemetrics-kanto-v4';
 const API = 'https://pokeapi.co/api/v2/';
 const record = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 const typeId = (value: unknown): value is TypeId => typeof value === 'string' && Object.hasOwn(TYPE_BY_ID, value);
+const validTypes = (value: unknown): value is TypeId[] => Array.isArray(value) && value.length >= 1 && value.length <= 2 && value.every(typeId) && new Set(value).size === value.length;
 const positiveInteger = (value: unknown): value is number => Number.isInteger(value) && Number(value) > 0;
 const imageUrl = (value: unknown) => value === null || (typeof value === 'string' && value.startsWith('https://'));
 
 function isPokemon(entry: unknown): entry is Pokemon {
     if (!record(entry) || !positiveInteger(entry.id) || entry.id > 151 ||
       typeof entry.name !== 'string' || !entry.name.length ||
-      !Array.isArray(entry.types) || !entry.types.length || entry.types.length > 2 || !entry.types.every(typeId) || new Set(entry.types).size !== entry.types.length ||
-      !LEGACY_TYPES.some(type => type.id === entry.legacyType) || !imageUrl(entry.image) || !imageUrl(entry.sprite) ||
+      !validTypes(entry.types) || !validTypes(entry.legacyTypes) || !entry.legacyTypes.every(id => LEGACY_TYPES.some(type => type.id === id)) ||
+      !imageUrl(entry.image) || !imageUrl(entry.sprite) ||
       !positiveInteger(entry.height) || !positiveInteger(entry.weight) ||
       !Array.isArray(entry.stats) || entry.stats.length !== STATS.length ||
       !entry.stats.every(stat => record(stat) && STATS.some(item => item.id === stat.id) && positiveInteger(stat.value)) ||
@@ -53,7 +54,7 @@ export function normalizePokemon(value: unknown): Pokemon {
   const other = value.sprites.other;
   const artwork = record(other) ? other['official-artwork'] : undefined;
   const entry = {
-    id: value.id, name: value.name, types, legacyType: originalTypes[0],
+    id: value.id, name: value.name, types, legacyTypes: originalTypes,
     image: record(artwork) ? artwork.front_default ?? null : null,
     sprite: value.sprites.front_default ?? null,
     height: value.height, weight: value.weight,

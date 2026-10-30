@@ -29,6 +29,6 @@
     {/each}
   </div>
   <p class="filter-footnote"><span aria-hidden="true">ⓘ</span><span id="filter-note">{legacy
-    ? 'Los 15 tipos originales, sin Hada, Acero ni Siniestro. Los tipos secundarios no se cuentan.'
+    ? 'Los 15 tipos originales, sin Hada, Acero ni Siniestro. Incluye ambos tipos de cada Pokémon en Gen I.'
     : 'Incluye tipos actuales como Hada y Acero. Siniestro no tiene Pokémon en esta generación.'}</span></p>
 </aside>

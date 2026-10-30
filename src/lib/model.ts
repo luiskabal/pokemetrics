@@ -5,7 +5,7 @@ export interface Pokemon {
   id: number;
   name: string;
   types: TypeId[];
-  legacyType: TypeId;
+  legacyTypes: TypeId[];
   image: string | null;
   sprite: string | null;
   height: number;

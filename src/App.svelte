@@ -89,7 +89,7 @@
         <button class="btn join-item" id="view-current" type="button" aria-pressed={!legacy} onclick={() => changeView('current')}>Actual</button>
         <button class="btn join-item" id="view-legacy" type="button" aria-pressed={legacy} onclick={() => changeView('legacy')}>Legacy · Gen I</button>
       </div>
-      <p class="view-description">{legacy ? 'Solo el primer tipo original de cada Pokémon. Sin segmentos combinados.' : 'Tipos actuales, con coincidencias entre los tipos seleccionados.'}</p>
+      <p class="view-description">{legacy ? 'Tipos originales de Gen I, incluidos los dobles tipos.' : 'Tipos actuales, con coincidencias entre los tipos seleccionados.'}</p>
     </div>
 
     {#if loadState.status === 'refreshing'}
@@ -100,7 +100,7 @@
 
     <section class="overview" aria-label="Resumen de la generación">
       <div class="overview-stat"><span class="overview-value" id="total-pokemon">{pokemon.length || '—'}</span><span class="overview-label">Pokémon en Kanto<small>Una especie, un Pokémon</small></span></div>
-      <div class="overview-stat"><span class="overview-value" id="available-types">{availableTypes.length}</span><span class="overview-label">Tipos para explorar<small>{legacy ? 'Primer tipo original · Gen I' : 'Clasificación actual'}</small></span></div>
+      <div class="overview-stat"><span class="overview-value" id="available-types">{availableTypes.length}</span><span class="overview-label">Tipos para explorar<small>{legacy ? 'Tipos originales · Gen I' : 'Clasificación actual'}</small></span></div>
       <div class="overview-stat"><span class="overview-value" id="selected-top">{selected.size}</span><span class="overview-label">Tipos seleccionados<small>Tu mezcla, en tiempo real</small></span></div>
     </section>
 
@@ -110,7 +110,7 @@
         <PieChart {analysis} {active} {legacy}/>
         <aside class="explanation"><span class="tip-icon" aria-hidden="true">✧</span><p>
           {#if legacy}
-            <strong>Legacy: un tipo por Pokémon.</strong> Se cuenta solo el primer tipo original de Gen I. Bulbasaur cuenta como Planta y Charizard como Fuego. Los tipos secundarios se omiten; al elegir todos, los 151 Pokémon suman 100 % sin segmentos combinados.
+            <strong>Tipos originales, un solo Pokémon.</strong> En Gen I ya existían los dobles tipos: Bulbasaur es Planta/Veneno y Charizard es Fuego/Volador. Si seleccionas ambos tipos, su coincidencia va en un segmento combinado. Cada Pokémon cuenta una vez y la torta completa suma 151, incluidos los otros Pokémon.
           {:else}
             <strong>Dos tipos, un solo Pokémon.</strong> Si seleccionas Planta y Veneno, los Pokémon que comparten ambos van en «Planta + Veneno». Así la torta suma 100 % y cada Pokémon cuenta una sola vez.
           {/if}
@@ -118,7 +118,7 @@
         {#if active}
           <section id="details-section" aria-labelledby="details-title">
             <h2 class="details-heading" id="details-title">Tus tipos, en detalle</h2>
-            <p class="details-caption">{legacy ? 'Cada Pokémon pertenece a un único tipo original. Estos totales no se superponen.' : 'Total por tipo, incluidos los Pokémon compartidos. Estos porcentajes no se suman.'}</p>
+            <p class="details-caption">Total por tipo, incluidos los Pokémon compartidos. Estos porcentajes no se suman.</p>
             <div class="type-details" id="type-details">
               {#each analysis.details as detail (detail.type)}
                 <div class="detail-card" data-type={detail.type}><div class="detail-icon" style:background={TYPE_BY_ID[detail.type].tint} style:color={TYPE_BY_ID[detail.type].ink}><TypeIcon type={detail.type}/></div><div><div class="detail-label">{TYPE_BY_ID[detail.type].name}</div><div class="detail-value">{detail.count} Pokémon ({percentage(detail.count, analysis.total)})</div></div></div>

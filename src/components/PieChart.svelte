@@ -16,7 +16,7 @@
 
 <section class="card chart-card" aria-labelledby="chart-title">
   <div class="section-heading"><h2 id="chart-title">{legacy ? 'Distribución Legacy · Gen I' : 'Distribución por tipo'}</h2><span class="badge chart-kind">◔ Torta</span></div>
-  <p class="description chart-description" id="chart-caption">{legacy ? 'Primer tipo original; porcentajes sobre el total de Kanto.' : 'Cada porcentaje se calcula sobre el total de Kanto.'}</p>
+  <p class="description chart-description" id="chart-caption">{legacy ? 'Tipos originales de Gen I; cada Pokémon cuenta una sola vez sobre el total de Kanto.' : 'Cada porcentaje se calcula sobre el total de Kanto.'}</p>
   <div class="chart-body">
     <div class="chart-stage">
       {#if active}

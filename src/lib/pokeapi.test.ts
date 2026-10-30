@@ -19,7 +19,7 @@ describe('normalización de PokéAPI', () => {
   it('ordena por slot, conserva las imágenes y extrae las estadísticas', () => {
     const entry = normalizePokemon(rawPokemon());
     expect(entry.types).toEqual(['grass', 'poison']);
-    expect(entry.legacyType).toBe('grass');
+    expect(entry.legacyTypes).toEqual(['grass', 'poison']);
     expect(entry.image).toBe('https://example.com/artwork.png');
     expect(entry.stats).toHaveLength(6);
   });
@@ -30,7 +30,7 @@ describe('normalización de PokéAPI', () => {
     raw.past_types = [{ generation: { url: 'https://pokeapi.co/api/v2/generation/5/' }, types: [{ slot: 1, type: { name: 'normal' } }] }];
     const entry = normalizePokemon(raw);
     expect(entry.types).toEqual(['fairy']);
-    expect(entry.legacyType).toBe('normal');
+    expect(entry.legacyTypes).toEqual(['normal']);
   });
 
   it('usa el registro histórico más antiguo, incluso si llega desordenado', () => {
@@ -40,7 +40,13 @@ describe('normalización de PokéAPI', () => {
       { generation: { url: 'https://pokeapi.co/api/v2/generation/5/' }, types: [{ slot: 1, type: { name: 'normal' } }] },
       { generation: { url: 'https://pokeapi.co/api/v2/generation/1/' }, types: [{ slot: 1, type: { name: 'electric' } }] },
     ];
-    expect(normalizePokemon(raw).legacyType).toBe('electric');
+    expect(normalizePokemon(raw).legacyTypes).toEqual(['electric']);
+  });
+
+  it('conserva los dos tipos de un registro histórico y respeta el orden de sus slots', () => {
+    const raw = rawPokemon();
+    raw.past_types = [{ generation: { url: 'https://pokeapi.co/api/v2/generation/1/' }, types: raw.types }];
+    expect(normalizePokemon(raw).legacyTypes).toEqual(['grass', 'poison']);
   });
 
   it('rechaza tipos desconocidos, slots repetidos y estadísticas incompletas', () => {
@@ -82,13 +88,22 @@ describe('consulta de la primera generación', () => {
   });
 });
 
-describe('caché compatible con el HTML original', () => {
-  it('acepta el formato v3 y rechaza especies repetidas o corruptas', () => {
+describe('caché con tipos históricos completos', () => {
+  it('acepta el formato v4 y rechaza especies repetidas o tipos históricos inválidos', () => {
     const pokemon = dataset();
     expect(isPokemonDataset(pokemon)).toBe(true);
     expect(isPokemonDataset([null, ...pokemon.slice(1)])).toBe(false);
     expect(isPokemonDataset([pokemon[1], ...pokemon.slice(1)])).toBe(false);
-    expect(isPokemonDataset([{ ...pokemon[0], legacyType: 'fairy' }, ...pokemon.slice(1)])).toBe(false);
+    for (const legacyTypes of [[], ['fairy'], ['grass', 'steel'], ['grass', 'grass'], ['grass', 'poison', 'bug']]) {
+      expect(isPokemonDataset([{ ...pokemon[0], legacyTypes }, ...pokemon.slice(1)])).toBe(false);
+    }
+  });
+
+  it('rechaza la caché anterior que solo guardaba el primer tipo original', () => {
+    const oldPokemon = dataset().map(({ legacyTypes, ...entry }) => ({ ...entry, legacyType: legacyTypes[0] }));
+    expect(isPokemonDataset(oldPokemon)).toBe(false);
+    vi.stubGlobal('localStorage', { getItem: () => JSON.stringify({ pokemon: oldPokemon, savedAt: 1_700_000_000_000 }) });
+    expect(readCache()).toBeNull();
   });
 
   it('recupera una copia válida y guarda con el mismo identificador', () => {
