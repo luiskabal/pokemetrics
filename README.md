@@ -43,6 +43,8 @@ La imagen principal de la ficha es la galería de **Ilustraciones oficiales**, q
 
 Las imágenes de frente y espalda están en el apartado desplegable **Imágenes de los juegos** de cada ficha. Su valor inicial se elige con **Imágenes de detalle** en el panel de filtros; el selector local solo cambia esa ficha y se reinicia al cerrarla. Gen I usa Rojo/Verde de Japón inicialmente. Los sprites se leen de `sprites.versions['generation-i']` y se muestran como pixel art; este selector de detalle no altera las ilustraciones del listado. Actual/Legacy sigue controlando la clasificación de tipos.
 
+Gen I tiene un tema inspirado en Game Boy y la Pokédex: cabecera roja, paneles verde LCD y marcos de menú, conservando el color de los tipos y las ilustraciones. Está en `src/themes/generation-i.css`, aplicado mediante `data-generation="1"` en el documento, incluidos los diálogos. El tema corresponde a la generación y se conserva al cambiar idioma, clasificación Actual/Legacy o imágenes; las demás generaciones se incorporarán cuando se agreguen sus datos. PokéAPI proporciona los recursos de Pokémon; esta interfaz se diseña en la aplicación.
+
 ## Publicación
 
 GitHub Actions comprueba tipos, ejecuta las pruebas y compila antes de publicar `dist/` en GitHub Pages. La fuente de Pages debe ser **GitHub Actions**. Los cambios en `main` se publican automáticamente en <https://luiskabal.github.io/pokemetrics/>.

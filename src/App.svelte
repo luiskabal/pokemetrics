@@ -103,7 +103,7 @@
   <main>
     <section class="intro" aria-labelledby="page-title">
       <div><p class="eyebrow">{$t('eyebrow')}</p><h1 id="page-title">{$t('title')}</h1><p class="intro-copy">{$t('intro')}</p></div>
-      <div class="generation"><span class="badge">I</span><div><strong>{$t('generation')}</strong><small>{$t('region')}</small></div></div>
+      <div class="generation"><span class="badge">I</span><div><strong>{$t('generation')}</strong><small>{$t('region')}</small><small class="generation-hardware" lang="en">GAME BOY · 1996</small></div></div>
     </section>
 
     <div class="view-controls">
