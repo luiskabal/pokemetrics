@@ -38,7 +38,7 @@
   --noise: 0;
 }
 
-    :root { color-scheme: light; --ink: #24392f; --muted: #70786f; --line: #e5e7df; --green: #234e42; --paper: #f5f5ef; }
+    :root { color-scheme: light; --ink: #24392f; --muted: #70786f; --line: #e5e7df; --green: #234e42; --paper: #f5f5ef; --browser-color: #234e42; }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Segoe UI", system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.5; }
     button, a { -webkit-tap-highlight-color: transparent; }
@@ -280,6 +280,19 @@
 .evolution-list li { display: flex; gap: 8px; align-items: center; font-size: 12px; }
 .evolution-list small { color: var(--muted); }
 .share-control { min-width: 0; margin-top: 8px; }
+.preferences { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 16px 24px; padding-top: 16px; }
+.preferences .language-controls { padding-top: 0; flex-wrap: wrap; }
+.appearance-controls { flex: 1 1 390px; min-width: 0; }
+.appearance-label { display: block; color: var(--muted); font-size: 11px; margin-bottom: 6px; }
+.appearance-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.appearance-options .btn { gap: 7px; height: auto; min-height: 36px; padding: 6px 10px; font-size: 11px; white-space: normal; border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.appearance-options .btn[aria-pressed="true"] { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+.theme-swatch { flex-shrink: 0; width: 16px; height: 16px; border-radius: 4px; border: 1px solid #ffffff80; background: linear-gradient(135deg, #963f3e 50%, #674986 50%); }
+.theme-swatch[data-preview="original"] { background: linear-gradient(#234e42 35%, #f5f5ef 35%); border-color: #c4d3c5; }
+.theme-swatch[data-preview="gameboy"] { background: linear-gradient(#963f3e 35%, #d7e0b0 35%); border-color: #8d987b; border-radius: 2px; }
+.theme-swatch[data-preview="lab"] { background: linear-gradient(#4edbc6 35%, #111d2e 35%); border-color: #4edbc6; }
+.generation-hardware { margin-top: 5px; font: 9px ui-monospace, monospace; }
+@media (max-width: 720px) { .intro { flex-wrap: wrap; } .generation { max-width: 100%; white-space: normal; } }
 .share-control .btn { white-space: nowrap; }
 .share-fallback { display: block; max-width: 100%; font-size: 11px; margin-top: 6px; }
 .share-fallback .input { display: block; width: 100%; min-width: 0; }

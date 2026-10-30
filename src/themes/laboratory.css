@@ -1,0 +1,82 @@
+:root[data-ui-theme="lab"] {
+  color-scheme: dark;
+  --ink: #e5eef7;
+  --muted: #a8bbce;
+  --line: #344862;
+  --green: #196a60;
+  --paper: #0c1420;
+  --browser-color: #0c1420;
+  --lab-accent: #6de2cf;
+  --lab-panel: #152235;
+  --lab-raised: #1d2e43;
+  --color-base-100: #152235;
+  --color-base-200: #1d2e43;
+  --color-base-300: #344862;
+  --color-base-content: #e5eef7;
+  --color-primary: #6de2cf;
+  --color-primary-content: #102c28;
+  --color-secondary: #adc7ed;
+  --color-secondary-content: #152235;
+  --color-neutral: #344862;
+  --color-neutral-content: #e5eef7;
+  --radius-box: 1.25rem;
+}
+
+[data-ui-theme="lab"] body { background: radial-gradient(ellipse at 85% 0, #173b4c80, transparent 50%), var(--paper); }
+[data-ui-theme="lab"] .shell { width: min(1280px, calc(100% - 64px)); }
+[data-ui-theme="lab"] .topbar { border-bottom-color: var(--line); }
+[data-ui-theme="lab"] .brand span span { color: var(--lab-accent); }
+[data-ui-theme="lab"] .brand svg circle:first-child, [data-ui-theme="lab"] .brand svg circle:last-child { fill: #196a60; }
+[data-ui-theme="lab"] .brand svg path { stroke: var(--ink); }
+[data-ui-theme="lab"] .brand svg circle:nth-last-child(2) { fill: var(--ink); }
+[data-ui-theme="lab"] .source-link, [data-ui-theme="lab"] .eyebrow, [data-ui-theme="lab"] .text-button { color: var(--lab-accent); }
+[data-ui-theme="lab"] .source-link:hover { color: #b9fff0; }
+[data-ui-theme="lab"] h1 { font-weight: 750; }
+[data-ui-theme="lab"] .nav-label { border-color: var(--line); }
+[data-ui-theme="lab"] .generation, [data-ui-theme="lab"] .card, [data-ui-theme="lab"] .detail-card, [data-ui-theme="lab"] .pokemon-card, [data-ui-theme="lab"] .pokemon-dialog { background: var(--lab-panel); border-color: var(--line); box-shadow: 0 12px 32px #0002; }
+[data-ui-theme="lab"] .card { border-radius: 20px; }
+[data-ui-theme="lab"] .generation .badge, [data-ui-theme="lab"] .pokemon-count { background: #1e4545; color: #a8ffec; border-color: #37786d; }
+[data-ui-theme="lab"] .overview { border: 1px solid #37786d; background: linear-gradient(110deg, #183b3c, #152235); border-radius: 20px; box-shadow: inset 3px 0 var(--lab-accent); }
+[data-ui-theme="lab"] .overview-value { color: var(--lab-accent); }
+[data-ui-theme="lab"] .overview-label { color: var(--ink); }
+[data-ui-theme="lab"] .overview-label small { color: #b2cdd0; }
+[data-ui-theme="lab"] .view-switch { border-color: var(--line); background: #0c1420; }
+[data-ui-theme="lab"] .view-switch button { color: var(--muted); }
+[data-ui-theme="lab"] .view-switch button[aria-pressed="true"] { background: var(--lab-accent); color: #102c28; box-shadow: none; }
+[data-ui-theme="lab"] .appearance-options .btn[aria-pressed="true"] { border-color: var(--lab-accent); box-shadow: 0 0 0 1px var(--lab-accent); background: #1e4545; }
+[data-ui-theme="lab"] .image-selector label, [data-ui-theme="lab"] .pokemon-toolbar label, [data-ui-theme="lab"] .step, [data-ui-theme="lab"] .selection-count, [data-ui-theme="lab"] .filter-footnote, [data-ui-theme="lab"] .pokemon-number, [data-ui-theme="lab"] .pokemon-card-hint, [data-ui-theme="lab"] .dialog-number, [data-ui-theme="lab"] .stat-row dt, [data-ui-theme="lab"] .connection { color: var(--muted); }
+[data-ui-theme="lab"] .image-selector .select, [data-ui-theme="lab"] .pokemon-toolbar .select, [data-ui-theme="lab"] .pokemon-toolbar .input, [data-ui-theme="lab"] .share-fallback .input { border-color: #506781; background-color: #101c2b; color: var(--ink); }
+[data-ui-theme="lab"] input::placeholder { color: #9bb0c4; opacity: 1; }
+[data-ui-theme="lab"] .chart-stats, [data-ui-theme="lab"] .sprite-details, [data-ui-theme="lab"] .illustration-gallery { background: #101c2b; }
+[data-ui-theme="lab"] .empty-chart { border-color: #506781; background: repeating-conic-gradient(#34486233 0deg 1deg, transparent 1deg 60deg), #101c2b; }
+[data-ui-theme="lab"] .empty-chart::after { border-color: var(--line); }
+[data-ui-theme="lab"] .empty-chart svg { color: #6c8b9e; }
+[data-ui-theme="lab"] .empty-mark, [data-ui-theme="lab"] .bar-track, [data-ui-theme="lab"] .stat-track { background: var(--lab-raised); color: var(--lab-accent); }
+[data-ui-theme="lab"] .chart-slice { stroke: var(--lab-panel); }
+[data-ui-theme="lab"] .chart-slice[aria-pressed="true"] { stroke: var(--ink); }
+[data-ui-theme="lab"] .legend-item[aria-pressed="true"], [data-ui-theme="lab"] .bar-select[aria-pressed="true"], [data-ui-theme="lab"] .segment-notice { background: #1e4545; color: var(--ink); box-shadow: inset 3px 0 var(--lab-accent); }
+[data-ui-theme="lab"] .explanation, [data-ui-theme="lab"] .species-description, [data-ui-theme="lab"] .stats-pending { border-color: #37786d; background: #132f34; color: #b8d9d5; }
+[data-ui-theme="lab"] .explanation strong { color: #a8ffec; }
+[data-ui-theme="lab"] .pokemon-card:hover { border-color: #6de2cf; box-shadow: 0 8px 24px #0004; }
+[data-ui-theme="lab"] .pokemon-empty { background: var(--lab-panel); border-color: #506781; }
+[data-ui-theme="lab"] .pokemon-empty strong { color: var(--ink); }
+[data-ui-theme="lab"] .pokemon-dialog::backdrop { background: #020913cc; }
+[data-ui-theme="lab"] .pokemon-hero { background: linear-gradient(125deg, #1e3d42, #152235 75%); border-top: 3px solid var(--lab-accent); }
+[data-ui-theme="lab"] .dialog-close { border-color: #506781; background: #152235; color: var(--ink); }
+[data-ui-theme="lab"] .dialog-close:hover { background: #344862; }
+[data-ui-theme="lab"] .pokemon-artwork .illustration-gallery { background: transparent; box-shadow: none; }
+[data-ui-theme="lab"] .illustration-stage { border-radius: 16px; background: #e7efe9; border: 1px solid #b7d0c4; }
+[data-ui-theme="lab"] .illustration-options button { border-color: #506781; background: #101c2b; color: var(--ink); }
+[data-ui-theme="lab"] .illustration-options button[aria-pressed="true"] { border-color: var(--lab-accent); background: #196a60; color: #fff; }
+[data-ui-theme="lab"] .sprite-details > summary { color: var(--lab-accent); }
+[data-ui-theme="lab"] .sprite-frame img { border-radius: 8px; background: #e7efe9; }
+[data-ui-theme="lab"] .radar-grid { fill: #adc7ed08; stroke: #506781; }
+[data-ui-theme="lab"] .radar-axis { stroke: #506781; }
+[data-ui-theme="lab"] .radar-shape { stroke: var(--lab-accent); }
+[data-ui-theme="lab"] .radar-marker { fill: var(--lab-accent); stroke: #152235; }
+[data-ui-theme="lab"] .comparison-table th:first-child { background: #101c2b; }
+[data-ui-theme="lab"] .compare-highest { background: #1e4545; color: #a8ffec; }
+[data-ui-theme="lab"] .compare-tray { border-color: #37786d; border-radius: 16px; background: #152235; color: var(--ink); }
+[data-ui-theme="lab"] :focus-visible { outline-color: #6de2cf; }
+
+@media (max-width: 720px) { [data-ui-theme="lab"] .shell { width: calc(100% - 32px); } }

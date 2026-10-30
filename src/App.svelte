@@ -22,8 +22,11 @@
   import { generation } from './lib/generation-state';
   import { GENERATIONS, SPECIES_GENERATION, defaultIllustration, generationInfo, typesForGeneration } from './lib/generations';
   import GenerationComparison from './components/GenerationComparison.svelte';
+  import AppearanceSelector from './components/AppearanceSelector.svelte';
+  import { readUiTheme, resolvedUiTheme, saveUiTheme } from './lib/ui-theme';
+  import type { UiTheme } from './lib/ui-theme';
 
-  const initialLocation = readExploration(new URL(location.href), $language);
+  const initialLocation = readExploration(new URL(location.href), $language, readUiTheme());
   generation.set(initialLocation.generation);
   const initialCache = readCache(initialLocation.generation);
   let dataGeneration = initialLocation.generation;
@@ -38,6 +41,7 @@
   let query = $state(initialLocation.query);
   let order = $state<PokemonOrder>(initialLocation.order);
   let chart = $state<'pie' | 'bars'>(initialLocation.chart);
+  let uiTheme = $state<UiTheme>(initialLocation.uiTheme);
   let shareUrl = $state(location.href);
   let compareIds = $state<number[]>([]);
   let favoriteIds = $state<number[]>(readFavorites());
@@ -82,13 +86,19 @@
   $effect(() => {
     document.documentElement.lang = $language;
     document.title = 'Pokémetrics · ' + regionLabel;
-    document.documentElement.dataset.generation = String($generation);
-    document.querySelector('meta[name="theme-color"]')!.setAttribute('content', $generation === 1 ? '#963f3e' : getComputedStyle(document.documentElement).getPropertyValue('--era-accent').trim());
     saveLanguage($language);
   });
 
   $effect(() => {
-    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against };
+    const root = document.documentElement;
+    root.dataset.generation = String($generation);
+    root.dataset.uiTheme = resolvedUiTheme(uiTheme, $generation);
+    document.querySelector('meta[name="theme-color"]')!.setAttribute('content', getComputedStyle(root).getPropertyValue('--browser-color').trim());
+    saveUiTheme(uiTheme);
+  });
+
+  $effect(() => {
+    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against, uiTheme };
     const url = explorationUrl(new URL(location.href), state).href;
     if (url !== location.href) history.replaceState(null, '', url);
     shareUrl = url;
@@ -101,6 +111,7 @@
     view = next.view; selectedTypes = next.types; query = next.query; order = next.order; chart = next.chart;
     selectedSegment = next.segment; selectedPokemonId = next.pokemonId; imageSet = next.imageSet; illustration = next.illustration;
     onlyFavorites = next.onlyFavorites;
+    uiTheme = next.uiTheme;
     against = next.against;
     language.set(next.language);
     if ($generation !== next.generation) { compareIds = []; comparisonOpen = false; }
@@ -205,7 +216,7 @@
     </div>
     <a class="source-link" href="https://pokeapi.co/docs/v2" target="_blank" rel="noopener noreferrer"><span class="status-dot"></span>{$t('source')} <span aria-hidden="true">↗</span></a>
   </header>
-  <LanguageSelector/>
+  <div class="preferences"><AppearanceSelector value={uiTheme} onChange={value => { if (value !== uiTheme) { checkpoint(); uiTheme = value; } }}/><LanguageSelector/></div>
 
   <main>
     <section class="intro" aria-labelledby="page-title">

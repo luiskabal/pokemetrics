@@ -1,4 +1,10 @@
 export const MESSAGES = {
+  themeLabel: ['Interfaz', 'Interface', 'インターフェース'],
+  themeAuto: ['Por generación', 'By generation', '世代に合わせる'],
+  themeOriginal: ['Original', 'Original', 'オリジナル'],
+  themeGameboy: ['Game Boy', 'Game Boy', 'ゲームボーイ'],
+  themeLab: ['Laboratorio', 'Laboratory', 'ラボ'],
+  themeHelp: ['Se aplica a toda la página y se guarda en este navegador. «Por generación» adapta el estilo a la época elegida.', 'Applies to the whole page and is saved in this browser. By generation adapts the style to the selected era.', 'ページ全体に適用し、このブラウザーに保存します。「世代に合わせる」は選択した時代のスタイルになります。'],
   exportCsv: ['Descargar CSV', 'Download CSV', 'CSVをダウンロード'],
   exportPng: ['Descargar PNG', 'Download PNG', 'PNGをダウンロード'],
   exportSvg: ['Descargar SVG', 'Download SVG', 'SVGをダウンロード'],
