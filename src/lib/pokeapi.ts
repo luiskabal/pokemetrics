@@ -1,4 +1,4 @@
-import { GAMES, HISTORICAL_ARTWORKS, LEGACY_TYPES, STATS, TYPE_BY_ID } from './metadata';
+import { GAMES, GEN_I_STATS, HISTORICAL_ARTWORKS, LEGACY_TYPES, STATS, TYPE_BY_ID } from './metadata';
 import type { TypeId } from './metadata';
 import type { Pokemon } from './model';
 
@@ -8,12 +8,19 @@ const record = (value: unknown): value is Record<string, unknown> => typeof valu
 const typeId = (value: unknown): value is TypeId => typeof value === 'string' && Object.hasOwn(TYPE_BY_ID, value);
 const validTypes = (value: unknown): value is TypeId[] => Array.isArray(value) && value.length >= 1 && value.length <= 2 && value.every(typeId) && new Set(value).size === value.length;
 const positiveInteger = (value: unknown): value is number => Number.isInteger(value) && Number(value) > 0;
+const baseStat = (value: unknown): value is number => positiveInteger(value) && value <= 255;
 const imageUrl = (value: unknown) => value === null || (typeof value === 'string' && value.startsWith('https://'));
 const validGameSprites = (value: unknown): value is Pokemon['gameSprites'] => record(value) && GAMES.every(game => {
   const sprites = value[game.id];
   return record(sprites) && imageUrl(sprites.front) && imageUrl(sprites.back);
 });
 const validHistoricalArtworks = (value: unknown) => value === undefined || (record(value) && HISTORICAL_ARTWORKS.every(artwork => imageUrl(value[artwork.id])));
+const historicalStatIds = new Set<string>([...STATS, ...GEN_I_STATS].map(stat => stat.id));
+const validPastStats = (value: unknown) => value === undefined || (Array.isArray(value) && value.every(history =>
+  record(history) && positiveInteger(history.generation) && Array.isArray(history.stats) && history.stats.length > 0 &&
+  history.stats.every(stat => record(stat) && typeof stat.id === 'string' && historicalStatIds.has(stat.id) && baseStat(stat.value)) &&
+  new Set(history.stats.map(stat => stat.id)).size === history.stats.length
+) && new Set(value.map(history => history.generation)).size === value.length);
 
 function isPokemon(entry: unknown): entry is Pokemon {
     if (!record(entry) || !positiveInteger(entry.id) || entry.id > 151 ||
@@ -22,8 +29,8 @@ function isPokemon(entry: unknown): entry is Pokemon {
       !imageUrl(entry.image) || !imageUrl(entry.sprite) || !validGameSprites(entry.gameSprites) || !validHistoricalArtworks(entry.historicalArtworks) ||
       !positiveInteger(entry.height) || !positiveInteger(entry.weight) ||
       !Array.isArray(entry.stats) || entry.stats.length !== STATS.length ||
-      !entry.stats.every(stat => record(stat) && STATS.some(item => item.id === stat.id) && positiveInteger(stat.value)) ||
-      new Set(entry.stats.map(stat => stat.id)).size !== STATS.length) return false;
+      !entry.stats.every(stat => record(stat) && STATS.some(item => item.id === stat.id) && baseStat(stat.value)) ||
+      new Set(entry.stats.map(stat => stat.id)).size !== STATS.length || !validPastStats(entry.pastStats)) return false;
     return true;
 }
 
@@ -48,7 +55,7 @@ function readTypes(value: unknown): TypeId[] {
 }
 
 export function normalizePokemon(value: unknown): Pokemon {
-  if (!record(value) || !Array.isArray(value.past_types) || !record(value.sprites) || !Array.isArray(value.stats)) throw new Error('Pokémon incompleto en PokéAPI.');
+  if (!record(value) || !Array.isArray(value.past_types) || !record(value.sprites) || !Array.isArray(value.stats) || !Array.isArray(value.past_stats)) throw new Error('Pokémon incompleto en PokéAPI.');
   const types = readTypes(value.types);
   const history = value.past_types.map(entry => {
     if (!record(entry) || !record(entry.generation)) throw new Error('Historial de tipos inválido.');
@@ -83,6 +90,16 @@ export function normalizePokemon(value: unknown): Pokemon {
     stats: value.stats.map(stat => {
       if (!record(stat) || !record(stat.stat)) throw new Error('Estadística incompleta.');
       return { id: stat.stat.name, value: stat.base_stat };
+    }),
+    pastStats: value.past_stats.map(history => {
+      if (!record(history) || !record(history.generation) || !Array.isArray(history.stats)) throw new Error('Historial de estadísticas incompleto.');
+      return {
+        generation: resourceId(history.generation.url),
+        stats: history.stats.map(stat => {
+          if (!record(stat) || !record(stat.stat)) throw new Error('Estadística histórica incompleta.');
+          return { id: stat.stat.name, value: stat.base_stat };
+        }),
+      };
     }),
   };
   if (!isPokemon(entry)) throw new Error('Datos incompletos o inválidos en PokéAPI.');

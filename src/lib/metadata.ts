@@ -28,6 +28,8 @@ export const STATS = [
       { id: 'special-attack', name: 'Ataque especial' }, { id: 'special-defense', name: 'Defensa especial' }, { id: 'speed', name: 'Velocidad' }
     ] as const;
 export type StatId = (typeof STATS)[number]["id"];
+export const GEN_I_STATS = [STATS[0], STATS[1], STATS[2], { id: 'special', name: 'Especial' }, STATS[5]] as const;
+export type HistoricalStatId = StatId | 'special';
 
 export const GAMES = [
   { id: 'red-green-japan', name: 'Rojo/Verde · Japón (Gen I)' },

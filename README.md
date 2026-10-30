@@ -24,12 +24,17 @@ npm run preview
 
 - `src/components/`: filtros, gráficos de torta y barras, tarjetas, imágenes y ficha de Pokémon.
 - `src/lib/analysis.ts`: cálculos de porcentajes, intersecciones y resultados únicos.
+- `src/lib/stats.ts`: estadísticas base históricas por generación.
 - `src/lib/pokeapi.ts`: consulta, validación de datos y caché del navegador.
 - `src/lib/metadata.ts`: colores, iconos, tipos y etiquetas.
 - `src/App.svelte`: estado de la página y composición de la interfaz.
 - `src/app.css`: tema visual y estilos compartidos.
 
-Actual conserva los tipos actuales y Legacy conserva todos los tipos originales de Gen I, incluidos los secundarios. Los tipos históricos se reconstruyen con `past_types` de PokéAPI; si no hay cambios registrados, se usan `types`. Ambas vistas separan las intersecciones en los gráficos de torta y barras, de modo que sus grupos, incluidos los otros Pokémon, siempre suman 151 sin duplicar especies. El selector de gráfico conserva los tipos seleccionados; las barras usan una escala fija de 0 a 100 % de Kanto. Los totales individuales por tipo pueden superponerse y no deben sumarse. Las estadísticas de las fichas son actuales.
+Actual conserva los tipos actuales y Legacy conserva todos los tipos originales de Gen I, incluidos los secundarios. Los tipos históricos se reconstruyen con `past_types` de PokéAPI; si no hay cambios registrados, se usan `types`. Ambas vistas separan las intersecciones en los gráficos de torta y barras, de modo que sus grupos, incluidos los otros Pokémon, siempre suman 151 sin duplicar especies. El selector de gráfico conserva los tipos seleccionados; las barras usan una escala fija de 0 a 100 % de Kanto. Los totales individuales por tipo pueden superponerse y no deben sumarse.
+
+Cada ficha muestra un radar y permite alternar a barras, con los valores numéricos y una escala fija de 0 a 255. En Actual comienza con las seis estadísticas actuales; en Legacy, con las cinco originales de Gen I, incluida **Especial** en lugar de ataque y defensa especiales separados. **Estadísticas de** permite consultar los juegos de Gen I o los datos actuales dentro de la ficha, sin cambiar los tipos ni las imágenes. Rojo/Verde, Rojo/Azul y Amarillo comparten estas estadísticas base; los datos consultados no incluyen nivel ni entrenamiento. La selección local y el gráfico vuelven a sus valores iniciales al cerrar la ficha.
+
+`src/lib/stats.ts` reconstruye cada estadística con `past_stats`: los cambios son parciales, y la generación de cada registro es su límite inclusivo. Se aplica el cambio más cercano que cubre la generación consultada; las estadísticas sin cambios conservan su valor actual. El historial se valida y guarda en la caché v5 existente. Las copias anteriores siguen funcionando: hasta completar la actualización, la vista histórica indica que faltan datos y permite consultar los actuales. No se inventa el Especial original si falta su registro. Su etiqueta se traduce en la interfaz porque el recurso `stat/9` no ofrece nombres localizados.
 
 El listado permite buscar dentro de los tipos seleccionados por nombre o número exacto de Pokédex (`25` o `#025`) y ordenar por número o nombre en ambos sentidos. La búsqueda ignora mayúsculas, acentos y puntuación, y reconoce `nidoran-f`, `nidoran-m`, `♀` y `♂`. Estos controles solo afectan al listado; los gráficos mantienen su base de 151 Pokémon. Elige **Todos** para buscar en todo Kanto.
 

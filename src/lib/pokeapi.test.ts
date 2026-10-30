@@ -7,6 +7,7 @@ function rawPokemon(id = 1) {
     id, name: 'pokemon-' + id, height: 7, weight: 69,
     types: [{ slot: 2, type: { name: 'poison' } }, { slot: 1, type: { name: 'grass' } }],
     past_types: [] as { generation: { url: string }; types: { slot: number; type: { name: string } }[] }[],
+    past_stats: [{ generation: { url: 'https://pokeapi.co/api/v2/generation/1/' }, stats: [{ stat: { name: 'special' }, base_stat: 65 }] }],
     sprites: {
       front_default: 'https://example.com/sprite.png',
       other: { 'official-artwork': {
@@ -36,6 +37,35 @@ describe('normalización de PokéAPI', () => {
     expect(entry.legacyTypes).toEqual(['grass', 'poison']);
     expect(entry.image).toBe('https://example.com/artwork.png');
     expect(entry.stats).toHaveLength(6);
+    expect(entry.pastStats).toEqual([{ generation: 1, stats: [{ id: 'special', value: 65 }] }]);
+  });
+
+  it('conserva los cambios parciales de estadísticas y sus generaciones inclusivas', () => {
+    const raw = rawPokemon(25);
+    raw.past_stats.push({ generation: { url: 'https://pokeapi.co/api/v2/generation/5/' }, stats: [{ stat: { name: 'defense' }, base_stat: 30 }, { stat: { name: 'special-defense' }, base_stat: 40 }] });
+    expect(normalizePokemon(raw).pastStats).toEqual([
+      { generation: 1, stats: [{ id: 'special', value: 65 }] },
+      { generation: 5, stats: [{ id: 'defense', value: 30 }, { id: 'special-defense', value: 40 }] },
+    ]);
+  });
+
+  it('acepta caché v5 sin historial y rechaza historiales corruptos', () => {
+    const pokemon = dataset();
+    expect(isPokemonDataset(pokemon.map(({ pastStats, ...entry }) => entry))).toBe(true);
+    for (const pastStats of [null, {}, [{ generation: 0, stats: [{ id: 'special', value: 50 }] }], [{ generation: 1, stats: [] }], [{ generation: 1, stats: [{ id: 'unknown', value: 50 }] }], [{ generation: 1, stats: [{ id: 'special', value: 256 }] }], [{ generation: 1, stats: [{ id: 'special', value: 50 }, { id: 'special', value: 50 }] }], [{ generation: 1, stats: [{ id: 'special', value: 50 }] }, { generation: 1, stats: [{ id: 'attack', value: 50 }] }]]) {
+      expect(isPokemonDataset([{ ...pokemon[0], pastStats }, ...pokemon.slice(1)])).toBe(false);
+    }
+  });
+
+  it('rechaza estadísticas históricas incompletas y valores fuera de la escala base', () => {
+    const raw = rawPokemon();
+    expect(() => normalizePokemon({ ...raw, past_stats: undefined })).toThrow();
+    expect(() => normalizePokemon({ ...raw, past_stats: [{ generation: { url: 'invalid' }, stats: raw.stats }] })).toThrow();
+    expect(() => normalizePokemon({ ...raw, past_stats: [{ generation: { url: 'https://pokeapi.co/api/v2/generation/1/' }, stats: [{ stat: null, base_stat: 50 }] }] })).toThrow();
+    for (const value of [0, -1, 1.5, 256]) {
+      expect(() => normalizePokemon({ ...raw, stats: raw.stats.map(stat => ({ ...stat, base_stat: value })) })).toThrow();
+      expect(() => normalizePokemon({ ...raw, past_stats: [{ ...raw.past_stats[0], stats: [{ stat: { name: 'special' }, base_stat: value }] }] })).toThrow();
+    }
   });
 
   it('conserva los sprites frontal y trasero que entrega cada juego de Gen I', () => {

@@ -1,7 +1,7 @@
 import catalogData from './locale-data.json';
 import { LATIN_MESSAGES, MESSAGES } from './messages';
 import type { MessageKey } from './messages';
-import type { IllustrationId, ImageSet, StatId, TypeId } from './metadata';
+import type { HistoricalStatId, IllustrationId, ImageSet, TypeId } from './metadata';
 
 export const LANGUAGES = [
   { id: 'en', label: 'English', locale: 'en-US' },
@@ -39,7 +39,8 @@ export function typeName(type: TypeId, language: Language = 'es-419'): string {
   return localizedName(catalog.types[type], language, type);
 }
 
-export function statName(stat: StatId, language: Language = 'es-419'): string {
+export function statName(stat: HistoricalStatId, language: Language = 'es-419'): string {
+  if (stat === 'special') return translate(language, 'specialStat');
   return localizedName(catalog.stats[stat], language, stat);
 }
 

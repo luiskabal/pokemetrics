@@ -1,4 +1,4 @@
-import type { GameId, HistoricalArtworkId, StatId, TypeId } from './metadata';
+import type { GameId, HistoricalArtworkId, HistoricalStatId, StatId, TypeId } from './metadata';
 
 export type ViewMode = 'current' | 'legacy';
 export type PokemonOrder = 'number-asc' | 'number-desc' | 'name-asc' | 'name-desc';
@@ -15,6 +15,7 @@ export interface Pokemon {
   height: number;
   weight: number;
   stats: { id: StatId; value: number }[];
+  pastStats?: { generation: number; stats: { id: HistoricalStatId; value: number }[] }[];
 }
 
 export interface ChartGroup {

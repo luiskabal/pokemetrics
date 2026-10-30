@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { STATS, TYPE_BY_ID } from '../lib/metadata';
+  import { TYPE_BY_ID } from '../lib/metadata';
   import type { IllustrationId, ImageSet } from '../lib/metadata';
   import { pokemonName, visibleTypes } from '../lib/analysis';
   import type { Pokemon, ViewMode } from '../lib/model';
@@ -7,8 +7,9 @@
   import TypeBadge from './TypeBadge.svelte';
   import ImageSelector from './ImageSelector.svelte';
   import IllustrationGallery from './IllustrationGallery.svelte';
+  import PokemonStats from './PokemonStats.svelte';
   import { language, t } from '../lib/i18n';
-  import { LOCALES, statName } from '../lib/localization';
+  import { LOCALES } from '../lib/localization';
   let { pokemon, view, defaultImageSet, defaultIllustration, onClose }: { pokemon: Pokemon | null; view: ViewMode; defaultImageSet: ImageSet; defaultIllustration: IllustrationId; onClose: () => void } = $props();
   let localImageSet = $state<ImageSet | null>(null);
   const imageSet = $derived(localImageSet ?? defaultImageSet);
@@ -23,7 +24,7 @@
 
 <dialog bind:this={dialog} class="pokemon-dialog" id="pokemon-dialog" aria-labelledby="pokemon-dialog-name" aria-describedby="pokemon-dialog-view"
   onclose={() => { localImageSet = null; onClose(); }} onpointerdown={event => { if (event.target === dialog) dialog.close(); }}
-  style:--pokemon-tint={type?.tint} style:--pokemon-color={type?.color}>
+  style:--pokemon-tint={type?.tint} style:--pokemon-color={type?.color} style:--pokemon-ink={type?.ink}>
   {#if pokemon}
     <div class="dialog-content">
       <form method="dialog"><button class="btn btn-circle dialog-close" type="submit" aria-label={$t('closeDetails')}>×</button></form>
@@ -55,15 +56,7 @@
           </div>
         </div>
       </details>
-      <section class="pokemon-stats" aria-labelledby="pokemon-stats-title">
-        <h3 id="pokemon-stats-title">{$t('baseStats')}</h3><p class="stat-note">{$t('statNote')}</p>
-        <dl class="stat-list" id="pokemon-stats">
-          {#each STATS as stat (stat.id)}
-            {@const value = pokemon.stats.find(item => item.id === stat.id)!.value}
-            <div class="stat-row"><dt>{statName(stat.id, $language)}</dt><dd><span>{value}</span><span class="stat-track" aria-hidden="true"><span class="stat-fill" style:width={Math.min(value / 255 * 100, 100) + '%'}></span></span></dd></div>
-          {/each}
-        </dl>
-      </section>
+      <PokemonStats {pokemon} {view}/>
     </div>
   {/if}
 </dialog>

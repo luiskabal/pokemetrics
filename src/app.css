@@ -267,7 +267,24 @@
 .connection-progress { display: block; width: 220px; max-width: 100%; height: 4px; margin-top: 10px; }
 .cache-updated { margin-top: 5px; color: var(--muted); font-size: 10px; }
 .tip-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.stats-heading { flex-wrap: wrap; margin-bottom: 14px; }
+.stats-version .select { max-width: none; }
+.stats-shared { margin-top: -8px; }
+.stats-body-radar { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: center; gap: 12px; }
+.stat-radar { display: block; width: 100%; overflow: visible; }
+.radar-grid { fill: #f3f5e926; stroke: #b7c3a6; stroke-width: 1; }
+.radar-axis { stroke: #cdd6bf; stroke-width: 1; }
+.radar-shape { fill: var(--pokemon-color); fill-opacity: .3; stroke: var(--pokemon-ink); stroke-width: 2.5; stroke-linejoin: round; }
+.radar-marker { fill: var(--pokemon-ink); stroke: #fff; stroke-width: 1; }
+.radar-label { font-size: 16px; fill: var(--ink); }
+.radar-value { font: 600 14px ui-monospace, monospace; }
+.stat-values .stat-row { grid-template-columns: minmax(0, 1fr) auto; padding-bottom: 7px; border-bottom: 1px solid var(--line); }
+.stat-values .stat-row dd { display: block; }
+.stats-scale { margin: 14px 0 0; }
+.stats-pending { padding: 16px; border: 1px solid var(--line); background: #f3f5e9; color: var(--muted); font-size: 12px; }
 @media (max-width: 600px) {
+  .stats-body-radar { grid-template-columns: 1fr; gap: 8px; }
+  .stat-radar { max-width: 400px; margin: auto; }
   .language-controls { flex-wrap: wrap; gap: 6px; }
   .language-switch { flex-wrap: wrap; justify-content: center; max-width: 100%; }
   .language-switch button { padding: 6px 8px; font-size: 11px; }
