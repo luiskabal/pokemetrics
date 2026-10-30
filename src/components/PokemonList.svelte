@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Pokemon, PokemonOrder, ViewMode } from '../lib/model';
-  import type { ImageSet } from '../lib/metadata';
+  import { ILLUSTRATIONS } from '../lib/metadata';
+  import type { IllustrationId } from '../lib/metadata';
   import { filterAndSortPokemon } from '../lib/analysis';
   import PokemonCard from './PokemonCard.svelte';
-  let { pokemon, view, imageSet, hasSelection, onOpen }: { pokemon: Pokemon[]; view: ViewMode; imageSet: ImageSet; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void } = $props();
+  let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void } = $props();
   let query = $state('');
   let order = $state<PokemonOrder>('number-asc');
   let searchInput: HTMLInputElement;
@@ -30,11 +31,19 @@
         <option value="name-desc">Nombre: Z–A</option>
       </select>
     </div>
+    <div class="pokemon-illustration">
+      <label for="illustration-set">Ilustraciones</label>
+      <select class="select" id="illustration-set" value={illustration} onchange={event => onIllustrationChange(event.currentTarget.value as IllustrationId)} aria-describedby="illustration-filter-help">
+        {#each ILLUSTRATIONS as option (option.id)}<option value={option.id}>{option.name}</option>{/each}
+      </select>
+    </div>
   </div>
   <p class="list-help" id="pokemon-search-help">{hasSelection ? 'La búsqueda filtra este listado. Los gráficos siguen mostrando la distribución de los tipos seleccionados sobre los 151 Pokémon.' : 'Selecciona uno o más tipos para buscar entre sus Pokémon. Puedes elegir «Todos» para explorar Kanto completo.'}</p>
+  <p class="list-help" id="illustration-filter-help">La ilustración elegida se aplica a todas las tarjetas y al abrir una ficha. Dentro de cada ficha puedes compararlas.</p>
+  {#if illustration !== 'current' && pokemon.some(entry => entry.historicalArtworks === undefined)}<p class="list-help">Las ilustraciones históricas se cargarán al actualizar los datos.</p>{/if}
   {#if results.length}
     <ul class="pokemon-grid" id="pokemon-grid" aria-labelledby="pokemon-title">
-      {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {imageSet} {onOpen}/></li>{/each}
+      {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/></li>{/each}
     </ul>
   {:else}
     <div class="pokemon-empty" id="pokemon-empty"><strong>{hasSelection ? 'Ningún Pokémon coincide con estos filtros.' : 'Tu selección, con nombre y cara.'}</strong><p>{hasSelection ? (query.trim() ? 'Prueba otro nombre o número, limpia la búsqueda o amplía los tipos seleccionados.' : 'Prueba otro tipo o cambia entre los tipos actuales y los originales de Gen I.') : 'Selecciona un tipo para descubrir sus Pokémon.'}</p></div>

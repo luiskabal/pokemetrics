@@ -33,7 +33,7 @@
     ? 'Los 15 tipos originales, sin Hada, Acero ni Siniestro. Incluye ambos tipos de cada Pokémon en Gen I.'
     : 'Incluye tipos actuales como Hada y Acero. Siniestro no tiene Pokémon en esta generación.'}</span></p>
   <div class="filter-images">
-    <ImageSelector id="image-set" value={imageSet} onChange={onImageSetChange}/>
-    <p class="image-scope-note">Se aplica a todas las tarjetas y a las fichas que abras. Actual/Legacy controla los tipos.</p>
+    <ImageSelector id="image-set" label="Imágenes de detalle" value={imageSet} onChange={onImageSetChange}/>
+    <p class="image-scope-note">Elige imágenes complementarias para las fichas. El listado usa el selector «Ilustraciones».</p>
   </div>
 </aside>

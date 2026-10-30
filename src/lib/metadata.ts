@@ -39,7 +39,9 @@ export type ImageSet = 'artwork' | GameId;
 export const IMAGE_SETS = [{ id: 'artwork', name: 'Arte actual' }, ...GAMES] as const;
 
 export const HISTORICAL_ARTWORKS = [
-  { id: 'red-and-blue', name: 'Rojo/Azul · Gen I' },
   { id: 'red-and-green', name: 'Rojo/Verde · Japón · Gen I' },
+  { id: 'red-and-blue', name: 'Rojo/Azul · Gen I' },
 ] as const;
 export type HistoricalArtworkId = (typeof HISTORICAL_ARTWORKS)[number]['id'];
+export type IllustrationId = HistoricalArtworkId | 'current';
+export const ILLUSTRATIONS = [...HISTORICAL_ARTWORKS, { id: 'current', name: 'Arte actual' }] as const;

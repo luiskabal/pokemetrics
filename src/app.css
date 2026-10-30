@@ -168,6 +168,7 @@
     .search-field input::-webkit-search-cancel-button { appearance: none; }
     .search-field button { flex-shrink: 0; font-size: 19px; }
     .pokemon-order { flex: 0 1 235px; min-width: 0; }
+    .pokemon-illustration { flex: 0 1 260px; min-width: 0; }
     .pokemon-toolbar .input, .pokemon-toolbar .select { width: 100%; height: 42px; min-height: 42px; border: 1px solid #d8dfd0; border-radius: 9px; background-color: #fff; color: var(--ink); font-size: 12px; }
     .pokemon-toolbar :disabled { cursor: default; opacity: .55; }
     .list-help { margin: 8px 0 0; color: var(--muted); font-size: 10px; }
@@ -198,18 +199,26 @@
     .pixel-sprite { image-rendering: pixelated; }
     .sprite-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; }
     .sprite-frame { min-width: 0; margin: 0; text-align: center; }
-    .pokemon-artwork .sprite-frame img { width: 100%; max-width: 160px; height: 128px; object-fit: contain; }
+    .sprite-frame img { width: 100%; max-width: 160px; height: 128px; object-fit: contain; }
     .sprite-frame figcaption { color: var(--muted); font-size: 10px; }
     .pokemon-hero .image-selector { margin-top: 14px; }
     .illustration-gallery { padding: 22px 28px; border-top: 1px solid var(--line); background: #fbfcf8; }
     .illustration-gallery h3 { margin: 0; font-size: 15px; font-weight: 650; }
     .illustration-stage { display: grid; place-items: center; height: 240px; margin: 14px 0; }
     .illustration-stage img { display: block; width: 100%; max-width: 300px; height: 240px; object-fit: contain; }
+    .illustration-stage > div { display: grid; place-items: center; width: 100%; height: 100%; }
+    .pokemon-artwork .illustration-gallery { padding: 0; border: 0; background: transparent; width: 100%; }
+    .pokemon-artwork .illustration-gallery .section-heading { flex-wrap: wrap; }
     .illustration-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
     .illustration-options button { height: auto; min-height: 36px; padding: 7px 10px; border: 1px solid #d8dfd0; border-radius: 7px; background: #fff; color: #536a48; font-size: 10px; box-shadow: none; }
     .illustration-options button[aria-pressed="true"] { border-color: var(--green); background: var(--green); color: #fff; }
     .illustration-caption { margin: 9px 0 0; text-align: center; color: var(--muted); font-size: 10px; }
-    .illustration-unavailable { margin: 18px 0; color: var(--muted); text-align: center; font-size: 12px; }
+    .sprite-details { border-top: 1px solid var(--line); background: #fbfcf8; }
+    .sprite-details > summary { cursor: pointer; padding: 16px 28px; color: #536a48; font-size: 12px; font-weight: 600; }
+    .sprite-details > summary:focus-visible { outline: 3px solid #208c70; outline-offset: -3px; }
+    .sprite-detail-content { display: grid; grid-template-columns: 1fr 1.1fr; gap: 24px; align-items: center; padding: 0 28px 22px; }
+    .detail-artwork { display: grid; place-items: center; }
+    .detail-artwork img { width: 100%; max-width: 180px; height: 160px; object-fit: contain; }
     .dialog-number { margin: 0 0 5px; font: 11px ui-monospace, monospace; color: #74846b; letter-spacing: 1.5px; }
     .dialog-name { margin: 0 0 12px; font-size: 30px; letter-spacing: -1px; line-height: 1.2; }
     .dialog-type-caption { font-size: 10px; color: var(--muted); margin: 0 0 6px; }
@@ -252,3 +261,8 @@
 .connection-progress { display: block; width: 220px; max-width: 100%; height: 4px; margin-top: 10px; }
 .cache-updated { margin-top: 5px; color: var(--muted); font-size: 10px; }
 .tip-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+@media (max-width: 600px) {
+  .pokemon-order, .pokemon-illustration { flex: 1 1 100%; }
+  .pokemon-artwork .illustration-gallery .section-heading { padding-right: 40px; }
+  .sprite-detail-content { grid-template-columns: 1fr; gap: 14px; padding: 0 22px 22px; }
+}
