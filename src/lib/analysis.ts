@@ -10,6 +10,10 @@ export function visibleTypes(pokemon: Pokemon, view: ViewMode): TypeId[] {
   return view === 'legacy' ? pokemon.legacyTypes : pokemon.types;
 }
 
+export function pokemonInSegment(pokemon: readonly Pokemon[], selected: ReadonlySet<TypeId>, view: ViewMode, key: string): Pokemon[] {
+  return pokemon.filter(entry => visibleTypes(entry, view).filter(type => selected.has(type)).sort().join('+') === key);
+}
+
 export function analyzePokemon(pokemon: readonly Pokemon[], selected: ReadonlySet<TypeId>, view: ViewMode, language: Language = 'es-419'): Analysis {
   const result: Analysis = { total: pokemon.length, matches: [], groups: [], details: [], remaining: pokemon.length };
   if (!selected.size || !pokemon.length) return result;

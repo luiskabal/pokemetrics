@@ -6,8 +6,7 @@
   import PokemonCard from './PokemonCard.svelte';
   import { language, t } from '../lib/i18n';
   import { imageName, statName } from '../lib/localization';
-  let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void } = $props();
-  let query = $state('');
+  let { pokemon, view, illustration, onIllustrationChange, hasSelection, onOpen, query = $bindable(''), segmentLabel, onClearSegment }: { pokemon: Pokemon[]; view: ViewMode; illustration: IllustrationId; onIllustrationChange: (value: IllustrationId) => void; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; query?: string; segmentLabel: string | null; onClearSegment: () => void } = $props();
   let order = $state<PokemonOrder>('number-asc');
   let searchInput: HTMLInputElement;
   const statOptions = $derived(view === 'legacy' ? GEN_I_STATS : STATS);
@@ -20,7 +19,8 @@
 
 <section class="pokemon-section" id="pokemon-section" aria-labelledby="pokemon-title">
   <div class="section-heading"><h2 id="pokemon-title">{$t('pokemonList')}</h2><span class="badge pokemon-count" id="pokemon-count" role="status" aria-live="polite">{hasSelection ? $t(query.trim() ? 'filteredCount' : 'pokemonCount', { count: results.length, total: pokemon.length }) : $t('noSelection')}</span></div>
-  <p class="description">{$t(view === 'legacy' ? 'listLegacyHelp' : 'listHelp')}</p>
+  <p class="description">{$t(segmentLabel ? 'segmentHelp' : view === 'legacy' ? 'listLegacyHelp' : 'listHelp')}</p>
+  {#if segmentLabel}<div class="segment-notice"><strong>{$t('segmentSelected', { label: segmentLabel })}</strong><button class="btn btn-sm" id="clear-segment" type="button" onclick={onClearSegment}>{$t('clearSegment')}</button></div>{/if}
   <div class="pokemon-toolbar">
     <div class="pokemon-search">
       <label for="pokemon-search">{$t('search')}</label>

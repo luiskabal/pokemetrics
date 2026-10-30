@@ -3,7 +3,7 @@
   import { LEGACY_TYPES, TYPES, TYPE_BY_ID } from './lib/metadata';
   import type { IllustrationId, ImageSet, TypeId } from './lib/metadata';
   import type { LoadState, Pokemon, ViewMode } from './lib/model';
-  import { analyzePokemon, percentage } from './lib/analysis';
+  import { analyzePokemon, percentage, pokemonInSegment } from './lib/analysis';
   import { fetchKanto, readCache, writeCache } from './lib/pokeapi';
   import TypeFilters from './components/TypeFilters.svelte';
   import DistributionChart from './components/DistributionChart.svelte';
@@ -21,6 +21,8 @@
   let imageSet = $state<ImageSet>('red-green-japan');
   let illustration = $state<IllustrationId>('red-and-green');
   let selectedTypes = $state<TypeId[]>([]);
+  let selectedSegment = $state<string | null>(null);
+  let query = $state('');
   let selectedPokemonId = $state<number | null>(null);
   let loadState = $state<LoadState>({ status: 'loading', completed: 0 });
   let controller: AbortController;
@@ -29,6 +31,8 @@
   const selected = $derived(new Set(selectedTypes));
   const analysis = $derived(analyzePokemon(pokemon, selected, view, $language));
   const active = $derived(selected.size > 0 && pokemon.length > 0);
+  const segment = $derived(analysis.groups.find(group => group.key === selectedSegment));
+  const listedPokemon = $derived(segment ? pokemonInSegment(pokemon, selected, view, segment.key) : analysis.matches);
   const updating = $derived(loadState.status === 'loading' || loadState.status === 'refreshing');
   const savedDate = $derived(savedAt === null ? null : new Date(savedAt));
   const selectedPokemon = $derived(selectedPokemonId === null ? null : pokemon.find(entry => entry.id === selectedPokemonId)!);
@@ -53,11 +57,23 @@
   });
 
   function toggleType(type: TypeId): void {
-    selectedTypes = selected.has(type) ? selectedTypes.filter(id => id !== type) : [...selectedTypes, type];
+    changeTypes(selected.has(type) ? selectedTypes.filter(id => id !== type) : [...selectedTypes, type]);
+  }
+
+  function changeTypes(types: TypeId[]): void {
+    selectedTypes = types;
+    selectedSegment = null;
+  }
+
+  function selectSegment(key: string): void {
+    selectedSegment = selectedSegment === key ? null : key;
+    query = '';
+    document.getElementById('pokemon-section')!.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
   }
 
   function changeView(next: ViewMode): void {
     view = next;
+    selectedSegment = null;
     if (next === 'legacy') selectedTypes = selectedTypes.filter(id => LEGACY_TYPES.some(type => type.id === id));
   }
 
@@ -127,9 +143,9 @@
     </section>
 
     <div class="workspace">
-      <TypeFilters {legacy} {selected} {imageSet} onImageSetChange={value => imageSet = value} disabled={!pokemon.length} onToggle={toggleType} onAll={() => selectedTypes = availableTypes.map(type => type.id)} onClear={() => selectedTypes = []}/>
+      <TypeFilters {legacy} {selected} {imageSet} onImageSetChange={value => imageSet = value} disabled={!pokemon.length} onToggle={toggleType} onAll={() => changeTypes(availableTypes.map(type => type.id))} onClear={() => changeTypes([])}/>
       <div class="results">
-        <DistributionChart {analysis} {active} {legacy}/>
+        <DistributionChart {analysis} {active} {legacy} selectedSegment={segment?.key ?? null} onSegment={selectSegment}/>
         <aside class="explanation"><span class="tip-icon" aria-hidden="true">✧</span><p>
           {#if legacy}
             <strong>{$t('originalExplanationTitle')}</strong> {$t('originalExplanation', explanationValues)}
@@ -150,7 +166,7 @@
         {/if}
       </div>
     </div>
-    <PokemonList pokemon={analysis.matches} {view} {illustration} onIllustrationChange={value => illustration = value} hasSelection={selected.size > 0} onOpen={entry => selectedPokemonId = entry.id}/>
+    <PokemonList pokemon={listedPokemon} bind:query segmentLabel={segment?.label ?? null} onClearSegment={() => selectedSegment = null} {view} {illustration} onIllustrationChange={value => illustration = value} hasSelection={selected.size > 0} onOpen={entry => selectedPokemonId = entry.id}/>
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
   </main>
 

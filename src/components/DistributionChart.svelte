@@ -2,7 +2,7 @@
   import { percentage, piePath } from '../lib/analysis';
   import type { Analysis } from '../lib/model';
   import { language, t } from '../lib/i18n';
-  let { analysis, active, legacy }: { analysis: Analysis; active: boolean; legacy: boolean } = $props();
+  let { analysis, active, legacy, selectedSegment, onSegment }: { analysis: Analysis; active: boolean; legacy: boolean; selectedSegment: string | null; onSegment: (key: string) => void } = $props();
   let chart = $state<'pie' | 'bars'>('pie');
   const slices = $derived.by(() => {
     let start = 0;
@@ -25,6 +25,7 @@
     </div>
   </div>
   <p class="description chart-description" id="chart-caption">{$t(legacy ? 'chartLegacyCaption' : 'chartCaption')}</p>
+  {#if active}<p class="list-help">{$t('segmentHint')}</p>{/if}
   {#if chart === 'bars' && active}
     <div class="bar-chart" id="bar-chart">
       <p class="bar-scale">{$t('barScale', { total: analysis.total })}</p>
@@ -32,8 +33,8 @@
       <ul class="bar-list" aria-label={$t('barsLabel')}>
         {#each analysis.groups as group (group.key)}
           <li class="bar-row" data-key={group.key}>
-            <div class="bar-label"><span>{group.label}</span><span class="bar-value">{$t('countPercent', { count: group.count, percent: percentage(group.count, analysis.total, $language) })}</span></div>
-            <div class="bar-track" aria-hidden="true"><span class="bar-fill" style:width={group.count / analysis.total * 100 + '%'} style:background={group.color}></span></div>
+            <button type="button" class="bar-select" aria-pressed={selectedSegment === group.key} onclick={() => onSegment(group.key)}><span class="bar-label"><span>{group.label}</span><span class="bar-value">{$t('countPercent', { count: group.count, percent: percentage(group.count, analysis.total, $language) })}</span></span>
+            <span class="bar-track" aria-hidden="true"><span class="bar-fill" style:width={group.count / analysis.total * 100 + '%'} style:background={group.color}></span></span></button>
           </li>
         {/each}
       </ul>
@@ -42,11 +43,11 @@
   <div class="chart-body">
     <div class="chart-stage">
       {#if active}
-        <svg class="pie" id="pie" viewBox="0 0 360 360" role="img" aria-labelledby="chart-title pie-description">
+        <svg class="pie" id="pie" viewBox="0 0 360 360" role="group" aria-labelledby="chart-title pie-description">
           <desc id="pie-description">{summary}</desc>
           <g id="slices">
             {#each slices as group (group.key)}
-              <path class="chart-slice" d={group.path} fill={group.color} data-key={group.key}>
+              <path class="chart-slice" d={group.path} fill={group.color} data-key={group.key} role="button" tabindex="0" aria-label={`${group.label}: ${$t('countPercent', { count: group.count, percent: percentage(group.count, analysis.total, $language) })}`} aria-pressed={selectedSegment === group.key} onclick={() => onSegment(group.key)} onkeydown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSegment(group.key); } }}>
                 <title>{group.label}: {$t('countPercent', { count: group.count, percent: percentage(group.count, analysis.total, $language) })}</title>
               </path>
             {/each}
@@ -60,7 +61,7 @@
       {#if active}
         <div class="legend" id="legend" aria-label={$t('legend')}>
           {#each analysis.groups as group (group.key)}
-            <div class="legend-item"><span class="swatch" style:background={group.color}></span><div><div class="legend-label">{group.label}</div><div class="legend-value">{$t('countPercent', { count: group.count, percent: percentage(group.count, analysis.total, $language) })}</div></div></div>
+            <button type="button" class="legend-item" data-key={group.key} aria-pressed={selectedSegment === group.key} onclick={() => onSegment(group.key)}><span class="swatch" style:background={group.color}></span><span><span class="legend-label">{group.label}</span><span class="legend-value">{$t('countPercent', { count: group.count, percent: percentage(group.count, analysis.total, $language) })}</span></span></button>
           {/each}
         </div>
       {:else}

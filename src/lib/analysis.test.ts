@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyzePokemon, filterAndSortPokemon, percentage, piePath, pokemonName } from './analysis';
+import { analyzePokemon, filterAndSortPokemon, percentage, piePath, pokemonInSegment, pokemonName } from './analysis';
 import { LEGACY_TYPES, STATS, TYPES } from './metadata';
 import type { TypeId } from './metadata';
 import type { Pokemon } from './model';
@@ -14,6 +14,13 @@ const sample = [
 ];
 
 describe('distribución de Pokémon', () => {
+  it('filtra segmentos exactos, incluidos Otros y tipos secundarios, sin cambiar el total', () => {
+    const selected = new Set<TypeId>(['grass', 'poison']);
+    expect(pokemonInSegment(sample, selected, 'legacy', 'grass+poison').map(p => p.id)).toEqual([1, 43]);
+    expect(pokemonInSegment(sample, selected, 'legacy', 'poison').map(p => p.id)).toEqual([23]);
+    expect(pokemonInSegment(sample, selected, 'legacy', '').map(p => p.id)).toEqual([7, 81]);
+    expect(analyzePokemon(sample, selected, 'legacy').total).toBe(6);
+  });
   it('empieza sin segmentos ni resultados al no seleccionar tipos', () => {
     const result = analyzePokemon(sample, new Set(), 'current');
     expect(result.groups).toEqual([]);
