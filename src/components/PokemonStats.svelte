@@ -51,9 +51,7 @@
     </select>
   </div>
   <p class="stat-note" id="stats-note">{$t(current ? 'statNote' : $generation === 1 ? 'statLegacyNote' : 'statHistoricalNote', { generation: localizedName(generationInfo($generation).names, $language, '') })}</p>
-  <p class="stat-note">{$t('statsDefaultForm')}</p>
   {#if stats}
-    {#if !current}<p class="stat-note stats-shared">{$t($generation === 1 ? 'statsShared' : 'statsSharedGeneral')}</p>{/if}
     <div class="stats-body" class:stats-body-radar={chart === 'radar'}>
       {#if chart === 'radar'}
         <svg class="stat-radar" id="pokemon-stat-radar" viewBox="0 0 400 320" role="img" aria-labelledby="stat-radar-title stat-radar-description">
@@ -81,8 +79,8 @@
         {/each}
       </dl>
     </div>
-    <p class="stat-note stats-scale">{$t('statsScale')}</p>
   {:else}
     <p class="stats-pending" role="status">{$t('statsPending')}</p>
   {/if}
+  <details class="stats-source-notes"><summary>{$t('statsDataNotes')}</summary><p class="stat-note">{$t('statsDefaultForm')}</p>{#if !current}<p class="stat-note">{$t($generation === 1 ? 'statsShared' : 'statsSharedGeneral')}</p>{/if}<p class="stat-note">{$t('statsScale')}</p></details>
 </section>

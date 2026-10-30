@@ -34,18 +34,19 @@
   {#if pokemon}
     {#key pokemon.id}
     <div class="dialog-content">
-      <form method="dialog"><button class="btn btn-circle dialog-close" type="submit" aria-label={$t('closeDetails')}>×</button></form>
+      <header class="pokemon-dialog-toolbar"><span>#{String(pokemon.id).padStart(3, '0')} · {pokemonName(pokemon.name, $language)}</span><form method="dialog"><button class="btn btn-sm" type="submit" aria-label={$t('closeDetails')}>{$t('backToList')} <span aria-hidden="true">×</span></button></form></header>
       <div class="pokemon-hero">
         <div class="pokemon-artwork">
           <IllustrationGallery {pokemon} {defaultIllustration}/>
         </div>
-        <div><p class="dialog-number">{$t('pokedex')} · #{String(pokemon.id).padStart(3, '0')}</p>
+        <div class="pokemon-identity"><p class="dialog-number">{$t('pokedex')} · #{String(pokemon.id).padStart(3, '0')}</p>
           <h2 class="dialog-name" id="pokemon-dialog-name">{pokemonName(pokemon.name, $language)}</h2>
           <p class="dialog-type-caption" id="pokemon-dialog-view">{$t(view === 'legacy' ? 'originalTypes' : 'currentTypes')}</p>
           <div class="pokemon-types">{#each types as type (type)}<TypeBadge {type}/>{/each}</div>
-          <dl class="physical-details"><div><dt>{$t('height')}</dt><dd id="pokemon-height">{(pokemon.height / 10).toLocaleString(LOCALES[$language])} m</dd></div><div><dt>{$t('weight')}</dt><dd id="pokemon-weight">{(pokemon.weight / 10).toLocaleString(LOCALES[$language])} kg</dd></div></dl>
-          <div class="detail-actions"><ShareLink url={shareUrl} id="share-pokemon"/><FavoriteButton {pokemon} active={isFavorite} onToggle={onFavorite}/></div>
+          <div class="identity-facts"><dl class="physical-details"><div><dt>{$t('height')}</dt><dd id="pokemon-height">{(pokemon.height / 10).toLocaleString(LOCALES[$language])} m</dd></div><div><dt>{$t('weight')}</dt><dd id="pokemon-weight">{(pokemon.weight / 10).toLocaleString(LOCALES[$language])} kg</dd></div></dl>
+          <div class="detail-actions"><ShareLink url={shareUrl} id="share-pokemon"/><FavoriteButton {pokemon} active={isFavorite} onToggle={onFavorite}/></div></div>
         </div>
+        <PokemonStats {pokemon} {view}/>
       </div>
       <details class="sprite-details">
         <summary>{$t('gameImages')}</summary>
@@ -64,7 +65,6 @@
           </div>
         </div>
       </details>
-      <PokemonStats {pokemon} {view}/>
       <PokemonDetails {pokemon} {view} onOpen={async id => { localImageSet = null; onEvolution(id); await tick(); dialog.scrollTop = 0; }}/>
     </div>
     {/key}

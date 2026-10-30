@@ -1,4 +1,6 @@
 export const MESSAGES = {
+  backToList: ['Volver al listado', 'Back to the list', '一覧に戻る'],
+  statsDataNotes: ['Fuente y criterios de los datos', 'Data source and scope', 'データの出典と集計条件'],
   themeLabel: ['Interfaz', 'Interface', 'インターフェース'],
   themeAuto: ['Por generación', 'By generation', '世代に合わせる'],
   themeOriginal: ['Original', 'Original', 'オリジナル'],
