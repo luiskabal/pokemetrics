@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import { TYPES, TYPE_BY_ID } from './lib/metadata';
   import type { IllustrationId, ImageSet, TypeId } from './lib/metadata';
   import type { LoadState, Pokemon, ViewMode } from './lib/model';
@@ -27,6 +27,9 @@
   import type { UiTheme } from './lib/ui-theme';
 
   const initialLocation = readExploration(new URL(location.href), $language, readUiTheme());
+  let section = $state<'explore' | 'play'>(initialLocation.section);
+  let gameRoom = $state<Promise<typeof import('./components/GameRoom.svelte')> | null>(initialLocation.section === 'play' ? import('./components/GameRoom.svelte') : null);
+  const sectionScroll = { explore: 0, play: 0 };
   generation.set(initialLocation.generation);
   const initialCache = readCache(initialLocation.generation);
   let dataGeneration = initialLocation.generation;
@@ -91,7 +94,7 @@
 
   $effect(() => {
     document.documentElement.lang = $language;
-    document.title = 'Pokémetrics · ' + regionLabel;
+    document.title = 'Pokémetrics · ' + (section === 'play' ? $t('appPlay') : regionLabel);
     saveLanguage($language);
   });
 
@@ -104,7 +107,7 @@
   });
 
   $effect(() => {
-    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against, uiTheme };
+    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against, uiTheme, section };
     const url = explorationUrl(new URL(location.href), state).href;
     if (url !== location.href) history.replaceState(null, '', url);
     shareUrl = url;
@@ -114,6 +117,8 @@
 
   function restoreLocation(): void {
     const next = readExploration(new URL(location.href), $language);
+    section = next.section;
+    if (section === 'play' && !gameRoom) gameRoom = import('./components/GameRoom.svelte');
     view = next.view; selectedTypes = next.types; query = next.query; order = next.order; chart = next.chart;
     selectedSegment = next.segment; selectedPokemonId = next.pokemonId; imageSet = next.imageSet; illustration = next.illustration;
     onlyFavorites = next.onlyFavorites;
@@ -128,6 +133,17 @@
     if (id === selectedPokemonId) return;
     if (id !== null && SPECIES_GENERATION.get(id) !== $generation) { changeGeneration(SPECIES_GENERATION.get(id)!, id); return; }
     checkpoint(); selectedPokemonId = id;
+  }
+
+  async function changeSection(next: 'explore' | 'play'): Promise<void> {
+    if (next === section) return;
+    sectionScroll[section] = scrollY;
+    checkpoint();
+    if (next === 'play' && !gameRoom) gameRoom = import('./components/GameRoom.svelte');
+    section = next;
+    await tick();
+    document.getElementById(next + '-main')!.focus({ preventScroll: true });
+    window.scrollTo({ top: sectionScroll[next], behavior: 'instant' });
   }
 
   function changeGeneration(id: number, pokemonId: number | null = null): void {
@@ -227,26 +243,32 @@
     }
   }
 
+  $effect(() => {
+    const id = $generation;
+    if (section === 'explore') untrack(() => { void load(id); });
+    return () => { controller?.abort(); controller = null; };
+  });
+
   onMount(() => {
     const resize = () => { compactLayout = compactMedia.matches; };
     compactMedia.addEventListener('change', resize);
-    const unsubscribe = generation.subscribe(id => { void load(id); });
     window.addEventListener('popstate', restoreLocation);
-    return () => { unsubscribe(); controller?.abort(); window.removeEventListener('popstate', restoreLocation); compactMedia.removeEventListener('change', resize); };
+    return () => { window.removeEventListener('popstate', restoreLocation); compactMedia.removeEventListener('change', resize); };
   });
 </script>
 
 <div class="shell">
-  <header class="topbar">
+  <header class="topbar site-topbar">
     <div class="brand">
       <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#234e42"/><path d="M1 16h30" stroke="#f5f5ef" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#f5f5ef"/><circle cx="16" cy="16" r="2.5" fill="#234e42"/></svg>
-      <span>poké<span>metrics</span></span><span class="nav-label">{$t('navLabel')}</span>
+      <span>poké<span>metrics</span></span>
     </div>
+    <nav class="site-navigation" aria-label={$t('appSections')}><button class="btn btn-sm" type="button" id="section-explore" aria-pressed={section === 'explore'} onclick={() => changeSection('explore')}>{$t('appExplore')}</button><button class="btn btn-sm" type="button" id="section-play" aria-pressed={section === 'play'} onclick={() => changeSection('play')}>{$t('appPlay')}</button></nav>
     <div class="header-actions"><ShareLink url={shareUrl} id="share-link"/><a class="source-link" href="https://pokeapi.co/docs/v2" target="_blank" rel="noopener noreferrer" aria-label={$t('source')}><span class="status-dot"></span><span class="source-label">{$t('source')}</span><span aria-hidden="true">↗</span></a></div>
   </header>
   <details class="preferences-panel"><summary>{$t('displayPreferences')} <small>{$t(UI_THEMES.find(option => option.id === uiTheme)!.label)} · {LANGUAGES.find(option => option.id === $language)!.label}</small></summary><div class="preferences"><AppearanceSelector value={uiTheme} onChange={value => { if (value !== uiTheme) { checkpoint(); uiTheme = value; } }}/><LanguageSelector/></div></details>
 
-  <main>
+  <main id="explore-main" tabindex="-1" hidden={section !== 'explore'}>
     <section class="intro" aria-labelledby="page-title">
       <div><p class="eyebrow">{$t('generationEyebrow', { total: definition.speciesIds.length })}</p><h1 id="page-title">{$t('regionTitle', { region: regionLabel })}</h1><p class="intro-copy">{$t('generationIntro')}</p></div>
       <div class="generation"><span class="badge">{definition.roman}</span><div><strong>{eraLabel}</strong><small>{$t('pokemonCount', { count: definition.speciesIds.length })}</small><small class="generation-hardware" lang="en">{definition.platform} · {definition.year}</small></div></div>
@@ -313,7 +335,9 @@
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
   </main>
 
-  <footer class="connection" id="connection" data-state={loadState.status}>
+  <main id="play-main" tabindex="-1" hidden={section !== 'play'}>{#if gameRoom}{#await gameRoom}<p class="description" role="status">{$t('playLoading')}</p>{:then module}<module.default active={section === 'play'}/>{:catch}<p class="app-notice" role="alert">{$t('playLoadError')}</p><button class="btn btn-sm" type="button" onclick={() => gameRoom = import('./components/GameRoom.svelte')}>{$t('retry')}</button>{/await}{/if}</main>
+
+  <footer class="connection" id="connection" data-state={loadState.status} hidden={section !== 'explore'}>
     <div>
       <div class="connection-state">
         {#if updating}<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>{:else}<span class="status-dot"></span>{/if}
@@ -326,6 +350,6 @@
     <span class="footer-note">{$t('footer')}<br/>{$t('originalForms', { generation: eraLabel })}</span>
   </footer>
 </div>
-{#if compareIds.length}<aside class="compare-tray" aria-label={$t('compareTitle')}><span role="status">{$t('compareCount', { count: compareIds.length })}</span><button class="btn btn-sm" id="open-comparison" type="button" disabled={compareIds.length < 2} onclick={() => comparisonOpen = true}>{$t('compare')}</button><button class="btn btn-sm" type="button" onclick={() => compareIds = []}>{$t('clear')}</button></aside>{/if}
-<PokemonComparison pokemon={comparedPokemon} {view} {illustration} open={comparisonOpen} onClose={() => comparisonOpen = false} onRemove={toggleCompare}/>
-<PokemonDialog pokemon={selectedPokemon} {view} {shareUrl} isFavorite={selectedPokemon !== null && favorites.has(selectedPokemon.id)} onFavorite={toggleFavorite} onEvolution={openPokemon} defaultImageSet={imageSet} defaultIllustration={illustration} onClose={() => openPokemon(null)}/>
+{#if compareIds.length && section === 'explore'}<aside class="compare-tray" aria-label={$t('compareTitle')}><span role="status">{$t('compareCount', { count: compareIds.length })}</span><button class="btn btn-sm" id="open-comparison" type="button" disabled={compareIds.length < 2} onclick={() => comparisonOpen = true}>{$t('compare')}</button><button class="btn btn-sm" type="button" onclick={() => compareIds = []}>{$t('clear')}</button></aside>{/if}
+<PokemonComparison pokemon={comparedPokemon} {view} {illustration} open={comparisonOpen && section === 'explore'} onClose={() => comparisonOpen = false} onRemove={toggleCompare}/>
+<PokemonDialog pokemon={section === 'explore' ? selectedPokemon : null} {view} {shareUrl} isFavorite={selectedPokemon !== null && favorites.has(selectedPokemon.id)} onFavorite={toggleFavorite} onEvolution={openPokemon} defaultImageSet={imageSet} defaultIllustration={illustration} onClose={() => openPokemon(null)}/>

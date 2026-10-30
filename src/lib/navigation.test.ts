@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { explorationUrl, readExploration } from './navigation';
 
 describe('enlaces de exploración', () => {
+  it('alterna Jugar y Explorar conservando los filtros sin publicar nombres de ROMs ni partidas', () => {
+    const state = readExploration(new URL('https://example.com/pokemetrics/?section=play&types=water&gen=2&ui=lab'));
+    expect(state.section).toBe('play');
+    expect(readExploration(explorationUrl(new URL('https://example.com/pokemetrics/'), state))).toEqual(state);
+    const explorer = explorationUrl(new URL('https://example.com/pokemetrics/'), { ...state, section: 'explore' });
+    expect(explorer.searchParams.has('section')).toBe(false); expect(explorer.searchParams.get('types')).toBe('water');
+    expect(readExploration(new URL('https://example.com/?section=bad')).section).toBe('explore');
+  });
   it('conserva selección, intersección, ficha, idioma y controles al compartir', () => {
     const input = new URL('https://example.com/pokemetrics/?view=legacy&types=poison,grass&q=フシギダネ&order=special-desc&chart=bars&segment=grass%2Bpoison&pokemon=1&art=current&game=yellow&lang=ja');
     const state = readExploration(input);

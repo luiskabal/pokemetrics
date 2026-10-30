@@ -5,5 +5,6 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   base: '/pokemetrics/',
   plugins: [svelte(), tailwindcss()],
+  build: { rollupOptions: { input: { app: 'index.html', emulator: 'emulator.html' } } },
   test: { include: ['src/**/*.test.ts'], environment: 'node' },
 });

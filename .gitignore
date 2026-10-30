@@ -5,3 +5,9 @@ index_v*.html
 *.local
 .env
 .env.*
+*.gb
+*.gbc
+*.sav
+*.srm
+*.state
+*.pokemetrics-save.json
