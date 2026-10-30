@@ -245,4 +245,4 @@
 </div>
 {#if compareIds.length}<aside class="compare-tray" aria-label={$t('compareTitle')}><span role="status">{$t('compareCount', { count: compareIds.length })}</span><button class="btn btn-sm" id="open-comparison" type="button" disabled={compareIds.length < 2} onclick={() => comparisonOpen = true}>{$t('compare')}</button><button class="btn btn-sm" type="button" onclick={() => compareIds = []}>{$t('clear')}</button></aside>{/if}
 <PokemonComparison pokemon={comparedPokemon} {view} {illustration} open={comparisonOpen} onClose={() => comparisonOpen = false} onRemove={toggleCompare}/>
-<PokemonDialog pokemon={selectedPokemon} {view} {shareUrl} isFavorite={selectedPokemon !== null && favorites.has(selectedPokemon.id)} onFavorite={toggleFavorite} defaultImageSet={imageSet} defaultIllustration={illustration} onClose={() => openPokemon(null)}/>
+<PokemonDialog pokemon={selectedPokemon} {view} {shareUrl} isFavorite={selectedPokemon !== null && favorites.has(selectedPokemon.id)} onFavorite={toggleFavorite} onEvolution={openPokemon} defaultImageSet={imageSet} defaultIllustration={illustration} onClose={() => openPokemon(null)}/>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { TYPE_BY_ID } from '../lib/metadata';
   import type { IllustrationId, ImageSet } from '../lib/metadata';
   import { pokemonName, visibleTypes } from '../lib/analysis';
@@ -10,9 +11,10 @@
   import PokemonStats from './PokemonStats.svelte';
   import ShareLink from './ShareLink.svelte';
   import FavoriteButton from './FavoriteButton.svelte';
+  import PokemonDetails from './PokemonDetails.svelte';
   import { language, t } from '../lib/i18n';
   import { LOCALES } from '../lib/localization';
-  let { pokemon, view, defaultImageSet, defaultIllustration, onClose, shareUrl, isFavorite, onFavorite }: { pokemon: Pokemon | null; view: ViewMode; defaultImageSet: ImageSet; defaultIllustration: IllustrationId; onClose: () => void; shareUrl: string; isFavorite: boolean; onFavorite: (id: number) => void } = $props();
+  let { pokemon, view, defaultImageSet, defaultIllustration, onClose, shareUrl, isFavorite, onFavorite, onEvolution }: { pokemon: Pokemon | null; view: ViewMode; defaultImageSet: ImageSet; defaultIllustration: IllustrationId; onClose: () => void; shareUrl: string; isFavorite: boolean; onFavorite: (id: number) => void; onEvolution: (id: number) => void } = $props();
   let localImageSet = $state<ImageSet | null>(null);
   const imageSet = $derived(localImageSet ?? defaultImageSet);
   let dialog: HTMLDialogElement;
@@ -30,6 +32,7 @@
   onclose={() => { localImageSet = null; if (pendingStateCloses) pendingStateCloses--; else onClose(); }} onpointerdown={event => { if (event.target === dialog) dialog.close(); }}
   style:--pokemon-tint={type?.tint} style:--pokemon-color={type?.color} style:--pokemon-ink={type?.ink}>
   {#if pokemon}
+    {#key pokemon.id}
     <div class="dialog-content">
       <form method="dialog"><button class="btn btn-circle dialog-close" type="submit" aria-label={$t('closeDetails')}>×</button></form>
       <div class="pokemon-hero">
@@ -62,6 +65,8 @@
         </div>
       </details>
       <PokemonStats {pokemon} {view}/>
+      <PokemonDetails {pokemon} {view} onOpen={async id => { localImageSet = null; onEvolution(id); await tick(); dialog.scrollTop = 0; }}/>
     </div>
+    {/key}
   {/if}
 </dialog>
