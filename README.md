@@ -60,6 +60,10 @@ La selección de imágenes comienza con las ilustraciones originales disponibles
 
 **Comparar distribución con** permite contrastar dos generaciones con los mismos tipos y vista. Cada columna usa su propio total de especies introducidas. Los datos de cada generación se guardan en su propia caché; la de Kanto conserva el identificador v5. Los cambios rápidos cancelan las consultas anteriores. `npm run update:generations` actualiza el catálogo de generaciones, juegos y tipos desde PokéAPI; `npm run update:locales` actualiza los nombres oficiales de las 1.025 especies.
 
+La página prioriza el listado: desde 1.200 px muestra filtros a la izquierda, Pokémon al centro y análisis a la derecha. Los paneles laterales permanecen accesibles al desplazarse y admiten desplazamiento con teclado. En móvil y tablet, las pestañas **Pokémon / Filtros / Análisis** muestran una zona a la vez; el listado abre primero. Flechas, Inicio y Fin recorren las pestañas. Seleccionar un segmento abre su listado y enfoca el título. Buscador, contador, tarjetas y CSV comparten los mismos resultados filtrados y ordenados.
+
+**Apariencia e idioma** está en un panel desplegable; los selectores globales de ilustraciones e imágenes de detalle están con los filtros. La comparación entre generaciones está en Análisis. Las fichas de escritorio muestran la ilustración a la izquierda y el resumen con radar/barras a la derecha; en móvil se apilan. **Volver al listado** permanece visible al desplazarse por la ficha y las notas del historial se pueden desplegar.
+
 ## Publicación
 
 **Descargar CSV** exporta exactamente los Pokémon visibles, respetando búsqueda, segmento, favoritos, orden, idioma y vista Actual/Legacy. Incluye ambos tipos, medidas en metros/kilogramos y cinco estadísticas en Gen I Legacy o seis en las otras vistas. Un historial pendiente deja valores vacíos y se identifica en su propia columna. El CSV usa UTF-8 con BOM y números decimales con punto; en hojas de cálculo se puede importar seleccionando coma como delimitador.

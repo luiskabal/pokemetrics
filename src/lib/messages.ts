@@ -1,4 +1,13 @@
 export const MESSAGES = {
+  usingSavedData: ['Mostrando la copia guardada', 'Showing saved data', '保存済みデータを表示中'],
+  displayPreferences: ['Apariencia e idioma', 'Appearance and language', '外観と言語'],
+  explorerSections: ['Secciones del explorador', 'Explorer sections', '検索画面のセクション'],
+  pokemonTab: ['Pokémon', 'Pokémon', 'ポケモン'],
+  filtersTab: ['Filtros', 'Filters', '絞り込み'],
+  analysisTab: ['Análisis', 'Analysis', '分析'],
+  showFilters: ['Elegir tipos', 'Choose types', 'タイプを選ぶ'],
+  showPokemonList: ['Ver Pokémon', 'View Pokémon', 'ポケモンを見る'],
+  listToolsHelp: ['Ayuda del buscador, orden y CSV', 'Search, sorting and CSV help', '検索・並べ替え・CSVの説明'],
   backToList: ['Volver al listado', 'Back to the list', '一覧に戻る'],
   statsDataNotes: ['Fuente y criterios de los datos', 'Data source and scope', 'データの出典と集計条件'],
   themeLabel: ['Interfaz', 'Interface', 'インターフェース'],

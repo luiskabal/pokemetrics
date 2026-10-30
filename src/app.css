@@ -383,3 +383,116 @@ html:has(dialog[open]) .compare-tray { display: none; }
   .pokemon-dialog-toolbar { padding: 8px 14px; }
   #pokemon-dialog .stats-body-radar { grid-template-columns: 1fr; }
 }
+
+.preferences-panel { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.preferences-panel > summary { cursor: pointer; color: var(--ink); font-size: 12px; font-weight: 600; }
+.preferences-panel > summary small { margin-left: 12px; color: var(--muted); font-weight: 400; }
+.preferences-panel .preferences { padding-bottom: 12px; }
+.explorer-grid { display: grid; gap: 18px; align-items: start; }
+.explorer-grid > * { min-width: 0; scroll-margin-top: 64px; }
+.explorer-grid .pokemon-section { margin: 0; padding: 18px; scroll-margin-top: 64px; }
+.explorer-grid .pokemon-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, .65fr); gap: 12px; }
+.explorer-grid .pokemon-toolbar > * { min-width: 0; }
+.explorer-grid .pokemon-grid { gap: 12px; }
+.list-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; font-size: 10px; }
+.list-actions .btn { min-height: 30px; height: auto; white-space: normal; font-size: 10px; }
+.list-actions #only-favorites { margin: 0; }
+.list-tools-help { margin-top: 12px; color: var(--muted); font-size: 10px; }
+.list-tools-help summary { cursor: pointer; font-weight: 600; padding: 5px 0; }
+.pokemon-empty .btn { margin-top: 14px; }
+.filter-images > .image-selector:not(:first-child) { margin-top: 16px; }
+.explorer-navigation { position: sticky; top: 0; z-index: 4; margin: 0 0 14px; padding: 8px 0; background: var(--paper); }
+.explorer-navigation [role="tablist"] { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--color-base-100); }
+.explorer-navigation .btn { min-width: 0; min-height: 40px; height: auto; padding: 8px 6px; border: 0; background: transparent; color: var(--ink); box-shadow: none; font-size: 12px; }
+.explorer-navigation .btn[aria-selected="true"] { background: var(--green); color: white; }
+.explorer-navigation small { padding: 1px 5px; background: #ffffff22; border: 1px solid currentColor; border-radius: 5px; font-size: 10px; }
+.filter-results-button { margin-top: 12px; width: 100%; }
+@media (min-width: 1200px) {
+  html[data-ui-theme] .shell { width: min(1680px, calc(100% - 48px)); }
+  html[data-ui-theme] .topbar { height: 72px; }
+  html[data-ui-theme] .intro { padding: 18px 0; }
+  .intro h1 { font-size: clamp(30px, 2.6vw, 38px); }
+  .intro-copy { margin-top: 7px; }
+  .generation-controls { margin-bottom: 12px; }
+  .view-controls { margin-bottom: 14px; }
+  html[data-ui-theme] .overview { padding: 16px 22px; margin-bottom: 18px; }
+  .overview-value { font-size: 30px; }
+  .explorer-grid { grid-template-columns: 228px minmax(0, 1fr) 300px; grid-template-areas: 'filters list analysis'; gap: 16px; }
+  .explorer-filters { grid-area: filters; }
+  .explorer-list { grid-area: list; }
+  .explorer-analysis { grid-area: analysis; }
+  .explorer-filters, .explorer-analysis { position: sticky; top: 16px; max-height: calc(100dvh - 32px); overflow-y: auto; scrollbar-width: thin; }
+  .explorer-grid .filters { padding: 16px; }
+  .explorer-grid .filters .section-heading { flex-wrap: wrap; gap: 4px; }
+  .explorer-grid .type-grid { gap: 7px; }
+  .explorer-grid .type-button { min-height: 55px; }
+  .explorer-grid .type-button span { font-size: 10px; }
+  .explorer-analysis .chart-card { padding: 16px 16px 0; }
+  .explorer-analysis h2 { font-size: 15px; }
+  .explorer-analysis .chart-body { grid-template-columns: 1fr; gap: 0; min-height: 0; }
+  .explorer-analysis .chart-stage { width: min(100%, 260px); }
+  .explorer-analysis .legend { grid-template-columns: 1fr 1fr; max-height: 220px; }
+  .explorer-analysis .legend-empty { text-align: center; padding: 0 0 14px; }
+  .explorer-analysis .empty-mark { display: none; }
+  .explorer-analysis .chart-stats { margin: 0 -16px; padding: 14px 12px; }
+  .explorer-analysis .chart-stat + .chart-stat { padding-left: 8px; }
+  .explorer-analysis .chart-stat-value { font-size: 20px; }
+  .explorer-analysis .bar-chart { min-height: 0; }
+  .explorer-analysis .bar-list { max-height: 320px; }
+  .explorer-analysis .type-details { grid-template-columns: 1fr; }
+  .explorer-analysis .generation-comparison { padding: 16px; margin: 0; }
+  .explorer-analysis .comparison-table th, .explorer-analysis .comparison-table td { padding: 8px; min-width: 90px; }
+}
+@media (min-width: 1600px) { .explorer-grid { grid-template-columns: 252px minmax(0, 1fr) 340px; gap: 20px; } }
+@media (max-width: 1199px) {
+  html[data-ui-theme] .topbar { height: 72px; }
+  html[data-ui-theme] .intro { padding-top: 18px; padding-bottom: 18px; }
+  .intro-copy { display: none; }
+  .overview { margin-bottom: 14px; }
+  .explorer-list .pokemon-section { padding: 16px; }
+}
+@media (max-width: 600px) {
+  .preferences-panel > summary small { display: block; margin: 4px 0 0 16px; }
+  .intro .eyebrow { display: none; }
+  html[data-ui-theme] .intro { gap: 10px; }
+  .intro .generation { margin: 0; padding: 6px 10px; }
+  .intro .generation .badge, .intro .generation-hardware { display: none; }
+  .generation-controls { gap: 8px; margin-bottom: 12px; }
+  .view-controls { gap: 8px; margin-bottom: 12px; }
+  .view-description { display: none; }
+  html[data-ui-theme] .overview { padding: 12px; gap: 8px; }
+  .overview-value { font-size: 24px; }
+  .overview-stat { flex-direction: column; align-items: start; gap: 4px; padding-left: 10px; }
+  .overview-label { font-size: 10px; }
+  .overview-label small { display: none; }
+  .explorer-grid .pokemon-toolbar { grid-template-columns: 1fr; gap: 10px; }
+  .explorer-grid .pokemon-grid { gap: 10px; }
+}
+
+.header-actions { display: flex; flex-wrap: wrap; justify-content: end; align-items: center; gap: 12px; min-width: 0; }
+.header-actions .share-control { margin: 0; }
+.header-actions .btn { font-size: 11px; }
+html[data-ui-theme] .intro { padding-top: 12px; padding-bottom: 12px; }
+.intro .eyebrow, .intro .intro-copy { display: none; }
+.intro h1 { font-size: clamp(27px, 2.4vw, 34px); }
+.shell .generation-controls { grid-template-columns: minmax(0, 1fr) auto; align-items: end; max-width: 680px; }
+.data-view-label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 11px; font-weight: 600; }
+.explorer-analysis .overview { margin: 0; gap: 8px; }
+html[data-ui-theme] .explorer-analysis .overview { padding: 14px; }
+.explorer-analysis .overview-stat { flex-direction: column; align-items: start; gap: 6px; padding-left: 8px; }
+.explorer-analysis .overview-value { font-size: 26px; }
+.explorer-analysis .overview-label { font-size: 10px; }
+.explorer-analysis .overview-label small { display: none; }
+@media (max-width: 600px) {
+  .header-actions { flex-wrap: nowrap; gap: 8px; }
+  .header-actions .source-label { display: none; }
+  .header-actions .btn { padding: 6px 8px; min-height: 32px; height: auto; font-size: 10px; }
+  .data-view-selector .view-switch button { padding: 8px 10px; }
+}
+.cache-notice { margin: 0 0 14px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px; color: var(--muted); background: var(--color-base-100); font-size: 11px; }
+.cache-notice summary { cursor: pointer; }
+.cache-notice p { margin: 10px 0; }
+@media (min-width: 600px) and (max-width: 1199px) {
+  .explorer-filters .type-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .explorer-analysis .chart-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}

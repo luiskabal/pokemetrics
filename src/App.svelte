@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { TYPES, TYPE_BY_ID } from './lib/metadata';
   import type { IllustrationId, ImageSet, TypeId } from './lib/metadata';
   import type { LoadState, Pokemon, ViewMode } from './lib/model';
-  import { analyzePokemon, percentage, pokemonInSegment } from './lib/analysis';
+  import { analyzePokemon, filterAndSortPokemon, percentage, pokemonInSegment } from './lib/analysis';
   import { fetchGeneration, readCache, writeCache } from './lib/pokeapi';
   import TypeFilters from './components/TypeFilters.svelte';
   import DistributionChart from './components/DistributionChart.svelte';
@@ -14,7 +14,7 @@
   import PokemonComparison from './components/PokemonComparison.svelte';
   import ShareLink from './components/ShareLink.svelte';
   import { language, t } from './lib/i18n';
-  import { LOCALES, localizedName, pokemonName, saveLanguage, typeName } from './lib/localization';
+  import { LANGUAGES, LOCALES, localizedName, pokemonName, saveLanguage, typeName } from './lib/localization';
   import { explorationUrl, readExploration } from './lib/navigation';
   import type { ExplorationState } from './lib/navigation';
   import type { PokemonOrder } from './lib/model';
@@ -23,7 +23,7 @@
   import { GENERATIONS, SPECIES_GENERATION, defaultIllustration, generationInfo, typesForGeneration } from './lib/generations';
   import GenerationComparison from './components/GenerationComparison.svelte';
   import AppearanceSelector from './components/AppearanceSelector.svelte';
-  import { readUiTheme, resolvedUiTheme, saveUiTheme } from './lib/ui-theme';
+  import { UI_THEMES, readUiTheme, resolvedUiTheme, saveUiTheme } from './lib/ui-theme';
   import type { UiTheme } from './lib/ui-theme';
 
   const initialLocation = readExploration(new URL(location.href), $language, readUiTheme());
@@ -52,6 +52,11 @@
   let selectedPokemonId = $state<number | null>(initialLocation.pokemonId);
   let loadState = $state<LoadState>({ status: 'loading', completed: 0 });
   let controller: AbortController | null = null;
+  const explorerPanels = [{ id: 'list', label: 'pokemonTab' }, { id: 'filters', label: 'filtersTab' }, { id: 'analysis', label: 'analysisTab' }] as const;
+  type ExplorerPanel = (typeof explorerPanels)[number]['id'];
+  const compactMedia = matchMedia('(max-width: 1199px)');
+  let compactLayout = $state(compactMedia.matches);
+  let activePanel = $state<ExplorerPanel>('list');
   const definition = $derived(generationInfo($generation));
   const eraLabel = $derived(localizedName(definition.names, $language, definition.roman));
   const regionLabel = $derived(localizedName(definition.regionNames, $language, ''));
@@ -64,6 +69,7 @@
   const favorites = $derived(new Set(favoriteIds));
   const selectedList = $derived(segment ? pokemonInSegment(pokemon, selected, view, segment.key) : analysis.matches);
   const listedPokemon = $derived(onlyFavorites ? (selected.size ? selectedList : pokemon).filter(entry => favorites.has(entry.id)) : selectedList);
+  const listedResults = $derived(filterAndSortPokemon(listedPokemon, query, order, $language, view, $generation));
   const comparedPokemon = $derived(compareIds.map(id => pokemon.find(entry => entry.id === id)!));
   const updating = $derived(loadState.status === 'loading' || loadState.status === 'refreshing');
   const savedDate = $derived(savedAt === null ? null : new Date(savedAt));
@@ -156,11 +162,31 @@
     selectedSegment = null;
   }
 
-  function selectSegment(key: string): void {
+  async function selectSegment(key: string): Promise<void> {
     checkpoint();
     selectedSegment = selectedSegment === key ? null : key;
     query = '';
+    if (compactLayout) activePanel = 'list';
+    await tick();
     document.getElementById('pokemon-section')!.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
+    document.getElementById('pokemon-title')!.focus({ preventScroll: true });
+  }
+
+  async function showPanel(panel: ExplorerPanel, focus = false): Promise<void> {
+    activePanel = panel;
+    await tick();
+    const element = document.getElementById('explorer-' + panel)!;
+    if (focus) element.focus({ preventScroll: true });
+    element.scrollIntoView({ block: 'start' });
+  }
+
+  function panelKeydown(event: KeyboardEvent, index: number): void {
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? explorerPanels.length - 1 : event.key === 'ArrowRight' ? (index + 1) % explorerPanels.length : event.key === 'ArrowLeft' ? (index + explorerPanels.length - 1) % explorerPanels.length : null;
+    if (next === null) return;
+    event.preventDefault();
+    const panel = explorerPanels[next].id;
+    void showPanel(panel);
+    document.getElementById('explorer-tab-' + panel)!.focus();
   }
 
   function changeView(next: ViewMode): void {
@@ -202,9 +228,11 @@
   }
 
   onMount(() => {
+    const resize = () => { compactLayout = compactMedia.matches; };
+    compactMedia.addEventListener('change', resize);
     const unsubscribe = generation.subscribe(id => { void load(id); });
     window.addEventListener('popstate', restoreLocation);
-    return () => { unsubscribe(); controller?.abort(); window.removeEventListener('popstate', restoreLocation); };
+    return () => { unsubscribe(); controller?.abort(); window.removeEventListener('popstate', restoreLocation); compactMedia.removeEventListener('change', resize); };
   });
 </script>
 
@@ -214,45 +242,52 @@
       <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#234e42"/><path d="M1 16h30" stroke="#f5f5ef" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#f5f5ef"/><circle cx="16" cy="16" r="2.5" fill="#234e42"/></svg>
       <span>poké<span>metrics</span></span><span class="nav-label">{$t('navLabel')}</span>
     </div>
-    <a class="source-link" href="https://pokeapi.co/docs/v2" target="_blank" rel="noopener noreferrer"><span class="status-dot"></span>{$t('source')} <span aria-hidden="true">↗</span></a>
+    <div class="header-actions"><ShareLink url={shareUrl} id="share-link"/><a class="source-link" href="https://pokeapi.co/docs/v2" target="_blank" rel="noopener noreferrer" aria-label={$t('source')}><span class="status-dot"></span><span class="source-label">{$t('source')}</span><span aria-hidden="true">↗</span></a></div>
   </header>
-  <div class="preferences"><AppearanceSelector value={uiTheme} onChange={value => { if (value !== uiTheme) { checkpoint(); uiTheme = value; } }}/><LanguageSelector/></div>
+  <details class="preferences-panel"><summary>{$t('displayPreferences')} <small>{$t(UI_THEMES.find(option => option.id === uiTheme)!.label)} · {LANGUAGES.find(option => option.id === $language)!.label}</small></summary><div class="preferences"><AppearanceSelector value={uiTheme} onChange={value => { if (value !== uiTheme) { checkpoint(); uiTheme = value; } }}/><LanguageSelector/></div></details>
 
   <main>
     <section class="intro" aria-labelledby="page-title">
       <div><p class="eyebrow">{$t('generationEyebrow', { total: definition.speciesIds.length })}</p><h1 id="page-title">{$t('regionTitle', { region: regionLabel })}</h1><p class="intro-copy">{$t('generationIntro')}</p></div>
-      <div class="generation"><span class="badge">{definition.roman}</span><div><strong>{eraLabel}</strong><small>{$t('regionLabel', { region: regionLabel })}</small><small class="generation-hardware" lang="en">{definition.platform} · {definition.year}</small></div></div>
+      <div class="generation"><span class="badge">{definition.roman}</span><div><strong>{eraLabel}</strong><small>{$t('pokemonCount', { count: definition.speciesIds.length })}</small><small class="generation-hardware" lang="en">{definition.platform} · {definition.year}</small></div></div>
     </section>
 
     <div class="generation-controls">
       <div class="image-selector"><label for="generation-select">{$t('chooseGeneration')}</label><select class="select" id="generation-select" value={$generation} onchange={event => changeGeneration(Number(event.currentTarget.value))}>{#each GENERATIONS as option (option.id)}<option value={option.id}>{localizedName(option.names, $language, option.roman)} · {localizedName(option.regionNames, $language, '')}</option>{/each}</select></div>
-      <div class="image-selector"><label for="against-generation">{$t('compareGeneration')}</label><select class="select" id="against-generation" value={against ?? ''} onchange={event => { checkpoint(); against = event.currentTarget.value ? Number(event.currentTarget.value) : null; }}><option value="">{$t('noGenerationComparison')}</option>{#each GENERATIONS.filter(option => option.id !== $generation) as option (option.id)}<option value={option.id}>{localizedName(option.names, $language, option.roman)}</option>{/each}</select></div>
-    </div>
-
-    <div class="view-controls">
-      <div class="join view-switch" role="group" aria-label={$t('typeView')}>
+      <div class="image-selector data-view-selector"><span class="data-view-label">{$t('typeView')}</span><div class="join view-switch" role="group" aria-label={$t('typeView')} aria-describedby="view-description">
         <button class="btn join-item" id="view-current" type="button" aria-pressed={!legacy} onclick={() => changeView('current')}>{$t('current')}</button>
         <button class="btn join-item" id="view-legacy" type="button" aria-pressed={legacy} onclick={() => changeView('legacy')}>{$t('legacy')}</button>
-      </div>
-      <p class="view-description">{$t(legacy ? 'legacyDescription' : 'currentDescription', { generation: eraLabel })}</p>
-      <ShareLink url={shareUrl} id="share-link"/>
+      </div></div>
+      <p class="sr-only" id="view-description">{$t(legacy ? 'legacyDescription' : 'currentDescription', { generation: eraLabel })}</p>
     </div>
 
     {#if loadState.status === 'refreshing'}
       <div class="alert alert-info app-notice" role="status"><span>{$t('refreshingNotice')}</span></div>
-    {:else if loadState.status === 'error' || loadState.status === 'cached'}
+    {:else if loadState.status === 'cached'}
+      <details class="cache-notice"><summary>{$t('usingSavedData')}{#if savedDate} · <time datetime={savedDate.toISOString()}>{savedDate.toLocaleDateString(LOCALES[$language])}</time>{/if}</summary><p>{connectionMessage}</p><button class="btn btn-sm" type="button" onclick={() => load()}>{$t('retry')}</button></details>
+    {:else if loadState.status === 'error'}
       <div class="alert alert-warning app-notice" role="status"><span>{connectionMessage}</span><button class="btn btn-sm" type="button" onclick={() => load()}>{$t('retry')}</button></div>
     {/if}
 
-    <section class="overview" aria-label={$t('overview')}>
-      <div class="overview-stat"><span class="overview-value" id="total-pokemon">{pokemon.length || '—'}</span><span class="overview-label">{$t('introducedPokemon')}<small>{$t('oneSpecies')}</small></span></div>
-      <div class="overview-stat"><span class="overview-value" id="available-types">{availableTypes.length}</span><span class="overview-label">{$t('typesToExplore')}<small>{$t(legacy ? 'originalTypes' : 'currentClassification')}</small></span></div>
-      <div class="overview-stat"><span class="overview-value" id="selected-top">{selected.size}</span><span class="overview-label">{$t('selectedTypes')}<small>{$t('liveMix')}</small></span></div>
-    </section>
-
-    <div class="workspace">
-      <TypeFilters {legacy} {selected} {imageSet} onImageSetChange={value => { checkpoint(); imageSet = value; }} disabled={!pokemon.length} onToggle={toggleType} onAll={() => changeTypes(availableTypes.map(type => type.id))} onClear={() => changeTypes([])}/>
-      <div class="results">
+    {#if compactLayout}<nav class="explorer-navigation" aria-label={$t('explorerSections')}><div role="tablist" aria-label={$t('explorerSections')}>{#each explorerPanels as panel, index (panel.id)}<button class="btn" type="button" role="tab" id={'explorer-tab-' + panel.id} aria-controls={'explorer-' + panel.id} aria-selected={activePanel === panel.id} tabindex={activePanel === panel.id ? 0 : -1} onclick={() => showPanel(panel.id)} onkeydown={event => panelKeydown(event, index)}>{$t(panel.label)}{#if panel.id === 'list'}<small>{listedResults.length}</small>{/if}</button>{/each}</div></nav>{/if}
+    <div class="explorer-grid">
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex (El panel lateral desplazable necesita foco para poder recorrerlo con teclado.) -->
+      <div class="explorer-filters" id="explorer-filters" role={compactLayout ? 'tabpanel' : 'region'} aria-labelledby={compactLayout ? 'explorer-tab-filters' : 'filters-title'} tabindex="0" hidden={compactLayout && activePanel !== 'filters'}>
+        <TypeFilters {legacy} {selected} {imageSet} {illustration} onIllustrationChange={value => { checkpoint(); illustration = value; }} onImageSetChange={value => { checkpoint(); imageSet = value; }} disabled={!pokemon.length} onToggle={toggleType} onAll={() => changeTypes(availableTypes.map(type => type.id))} onClear={() => changeTypes([])}/>
+        {#if compactLayout}<button class="btn filter-results-button" type="button" onclick={() => showPanel('list', true)}>{$t('showPokemonList')} · {listedResults.length}</button>{/if}
+      </div>
+      <div class="explorer-list" id="explorer-list" role={compactLayout ? 'tabpanel' : undefined} aria-labelledby={compactLayout ? 'explorer-tab-list' : undefined} tabindex="-1" hidden={compactLayout && activePanel !== 'list'}>
+        {#if favoriteSaveFailed}<p class="app-notice" role="status">{$t('favoritesSessionOnly')}</p>{/if}
+        <PokemonList pokemon={listedPokemon} results={listedResults} bind:query bind:order onOrderChange={checkpoint} {favorites} {onlyFavorites} onFavorite={toggleFavorite} onOnlyFavorites={() => { checkpoint(); onlyFavorites = !onlyFavorites; }} {compareIds} onCompare={toggleCompare} segmentLabel={segment?.label ?? null} onClearSegment={() => { checkpoint(); selectedSegment = null; }} {view} {illustration} hasSelection={selected.size > 0 || onlyFavorites} onOpen={entry => openPokemon(entry.id)} onShowFilters={() => showPanel('filters', true)}/>
+      </div>
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex (El análisis lateral desplazable necesita foco para poder recorrerlo con teclado.) -->
+      <div class="explorer-analysis results" id="explorer-analysis" role={compactLayout ? 'tabpanel' : 'region'} aria-labelledby={compactLayout ? 'explorer-tab-analysis' : 'chart-title'} tabindex="0" hidden={compactLayout && activePanel !== 'analysis'}>
+        <section class="overview" aria-label={$t('overview')}>
+          <div class="overview-stat"><span class="overview-value" id="total-pokemon">{pokemon.length || '—'}</span><span class="overview-label">{$t('introducedPokemon')}<small>{$t('oneSpecies')}</small></span></div>
+          <div class="overview-stat"><span class="overview-value" id="available-types">{availableTypes.length}</span><span class="overview-label">{$t('typesToExplore')}<small>{$t(legacy ? 'originalTypes' : 'currentClassification')}</small></span></div>
+          <div class="overview-stat"><span class="overview-value" id="selected-top">{selected.size}</span><span class="overview-label">{$t('selectedTypes')}<small>{$t('liveMix')}</small></span></div>
+        </section>
+        <div class="image-selector"><label for="against-generation">{$t('compareGeneration')}</label><select class="select" id="against-generation" value={against ?? ''} onchange={event => { checkpoint(); against = event.currentTarget.value ? Number(event.currentTarget.value) : null; }}><option value="">{$t('noGenerationComparison')}</option>{#each GENERATIONS.filter(option => option.id !== $generation) as option (option.id)}<option value={option.id}>{localizedName(option.names, $language, option.roman)}</option>{/each}</select></div>
         <DistributionChart {analysis} {active} {legacy} {chart} onChartChange={value => { checkpoint(); chart = value; }} selectedSegment={segment?.key ?? null} onSegment={selectSegment}/>
         <aside class="explanation"><span class="tip-icon" aria-hidden="true">✧</span><p>
           {#if legacy}
@@ -272,11 +307,9 @@
             </div>
           </section>
         {/if}
+        {#if against !== null}<GenerationComparison {pokemon} other={against} {selected} {view}/>{/if}
       </div>
     </div>
-    {#if against !== null}<GenerationComparison {pokemon} other={against} {selected} {view}/>{/if}
-    {#if favoriteSaveFailed}<p class="app-notice" role="status">{$t('favoritesSessionOnly')}</p>{/if}
-    <PokemonList pokemon={listedPokemon} bind:query bind:order onOrderChange={checkpoint} {favorites} {onlyFavorites} onFavorite={toggleFavorite} onOnlyFavorites={() => { checkpoint(); onlyFavorites = !onlyFavorites; }} {compareIds} onCompare={toggleCompare} segmentLabel={segment?.label ?? null} onClearSegment={() => { checkpoint(); selectedSegment = null; }} {view} {illustration} onIllustrationChange={value => { checkpoint(); illustration = value; }} hasSelection={selected.size > 0 || onlyFavorites} onOpen={entry => openPokemon(entry.id)}/>
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
   </main>
 
