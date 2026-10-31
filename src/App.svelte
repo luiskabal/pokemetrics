@@ -1,7 +1,10 @@
 <script lang="ts">
   import { onMount, tick, untrack } from 'svelte';
+  import StatFilters from './components/StatFilters.svelte';
+  import { availableStats, filterStatRanges } from './lib/stat-explorer';
+  import type { StatRange } from './lib/stat-explorer';
   import { TYPES, TYPE_BY_ID } from './lib/metadata';
-  import type { IllustrationId, ImageSet, TypeId } from './lib/metadata';
+  import type { IllustrationId, ImageSet, TypeId, HistoricalStatId } from './lib/metadata';
   import type { LoadState, Pokemon, ViewMode } from './lib/model';
   import { analyzePokemon, filterAndSortPokemon, percentage, pokemonInSegment } from './lib/analysis';
   import { readCache } from './lib/pokeapi';
@@ -48,6 +51,10 @@
   let illustration = $state<IllustrationId>(initialLocation.illustration);
   let selectedTypes = $state<TypeId[]>(initialLocation.types);
   let selectedSegment = $state<string | null>(initialLocation.segment);
+  let statRanges = $state<StatRange[]>(initialLocation.statRanges ?? []);
+  let xStat = $state<HistoricalStatId>(initialLocation.xStat ?? 'attack');
+  let yStat = $state<HistoricalStatId>(initialLocation.yStat ?? 'speed');
+  $effect(() => { const valid = availableStats(view, $generation).map(stat => stat.id as HistoricalStatId); if (statRanges.some(range => !valid.includes(range.id))) statRanges = statRanges.filter(range => valid.includes(range.id)); if (!valid.includes(xStat)) xStat = 'attack'; if (!valid.includes(yStat)) yStat = 'speed'; });
   let query = $state(initialLocation.query);
   let order = $state<PokemonOrder>(initialLocation.order);
   let chart = $state<'pie' | 'bars'>(initialLocation.chart);
@@ -82,7 +89,7 @@
   const favorites = $derived(new Set(favoriteIds));
   const selectedList = $derived(segment ? pokemonInSegment(pokemon, selected, view, segment.key) : analysis.matches);
   const listedPokemon = $derived(onlyFavorites ? (selected.size ? selectedList : pokemon).filter(entry => favorites.has(entry.id)) : selectedList);
-  const listedResults = $derived(filterAndSortPokemon(listedPokemon, query, order, $language, view, $generation));
+  const listedResults = $derived(filterStatRanges(filterAndSortPokemon(listedPokemon, query, order, $language, view, $generation), statRanges, view, $generation));
   const comparedPokemon = $derived(compareIds.map(id => pokemon.find(entry => entry.id === id)!));
   const updating = $derived(loadState.status === 'loading' || loadState.status === 'refreshing');
   const savedDate = $derived(savedAt === null ? null : new Date(savedAt));
@@ -118,7 +125,7 @@
   });
 
   $effect(() => {
-    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against, uiTheme, section, scope, edition: $edition, dex };
+    const state: ExplorationState = { statRanges, xStat, yStat, view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against, uiTheme, section, scope, edition: $edition, dex };
     const url = explorationUrl(new URL(location.href), state).href;
     if (url !== location.href) history.replaceState(null, '', url);
     shareUrl = url;
@@ -132,6 +139,7 @@
     scope = next.scope; dex = next.dex; edition.set(next.edition);
     if (section === 'teams' && !teamBuilder) teamBuilder = import('./components/TeamBuilder.svelte');
     if (section === 'play' && !gameRoom) gameRoom = import('./components/GameRoom.svelte');
+    statRanges = next.statRanges ?? []; xStat = next.xStat ?? 'attack'; yStat = next.yStat ?? 'speed';
     view = next.view; selectedTypes = next.types; query = next.query; order = next.order; chart = next.chart;
     selectedSegment = next.segment; selectedPokemonId = next.pokemonId; imageSet = next.imageSet; illustration = next.illustration;
     onlyFavorites = next.onlyFavorites;
@@ -321,6 +329,7 @@
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (El panel lateral desplazable necesita foco para poder recorrerlo con teclado.) -->
       <div class="explorer-filters" id="explorer-filters" role={compactLayout ? 'tabpanel' : 'region'} aria-labelledby={compactLayout ? 'explorer-tab-filters' : 'filters-title'} tabindex="0" hidden={compactLayout && activePanel !== 'filters'}>
         <TypeFilters {legacy} {selected} {imageSet} {illustration} onIllustrationChange={value => { checkpoint(); illustration = value; }} onImageSetChange={value => { checkpoint(); imageSet = value; }} disabled={!pokemon.length} onToggle={toggleType} onAll={() => changeTypes(availableTypes.map(type => type.id))} onClear={() => changeTypes([])}/>
+        <StatFilters ranges={statRanges} {view} onChange={value => { checkpoint(); statRanges = value; }}/>
         {#if compactLayout}<button class="btn filter-results-button" type="button" onclick={() => showPanel('list', true)}>{$t('showPokemonList')} · {listedResults.length}</button>{/if}
       </div>
       <div class="explorer-list" id="explorer-list" role={compactLayout ? 'tabpanel' : undefined} aria-labelledby={compactLayout ? 'explorer-tab-list' : undefined} tabindex="-1" hidden={compactLayout && activePanel !== 'list'}>
@@ -335,6 +344,7 @@
           <div class="overview-stat"><span class="overview-value" id="selected-top">{selected.size}</span><span class="overview-label">{$t('selectedTypes')}<small>{$t('liveMix')}</small></span></div>
         </section>
         <div class="image-selector"><label for="against-generation">{$t('compareGeneration')}</label><select class="select" id="against-generation" disabled={scope !== 'introduced'} value={against ?? ''} onchange={event => { checkpoint(); against = event.currentTarget.value ? Number(event.currentTarget.value) : null; }}><option value="">{$t('noGenerationComparison')}</option>{#each GENERATIONS.filter(option => option.id !== $generation) as option (option.id)}<option value={option.id}>{localizedName(option.names, $language, option.roman)}</option>{/each}</select></div>
+        {#if section === 'explore' && (!compactLayout || activePanel === 'analysis')}{#await import('./components/StatScatter.svelte') then module}<module.default pokemon={listedResults} {view} x={xStat} y={yStat} onAxes={(x, y) => { checkpoint(); xStat = x; yStat = y; }} onOpen={id => openPokemon(id)}/>{/await}{/if}
         <DistributionChart {analysis} {active} {legacy} {chart} onChartChange={value => { checkpoint(); chart = value; }} selectedSegment={segment?.key ?? null} onSegment={selectSegment}/>
         <aside class="explanation"><span class="tip-icon" aria-hidden="true">✧</span><p>
           {#if legacy}

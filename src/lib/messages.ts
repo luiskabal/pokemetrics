@@ -1,4 +1,12 @@
 export const MESSAGES = {
+  statFilters: ['Filtrar estadísticas', 'Filter stats', '種族値で絞り込む'],
+  statFiltersHelp: ['Rangos inclusivos de 0 a 255. Filtran el listado, el CSV y la dispersión; la torta conserva el total del conjunto.', 'Inclusive ranges from 0 to 255. Filters the list, CSV and scatter plot; the pie retains the full set total.', '0～255の範囲で一覧・CSV・散布図を絞り込みます。円グラフの総数は変わりません。'],
+  scatterTitle: ['Explorar estadísticas', 'Explore stats', '種族値を比較'],
+  scatterHelp: ['Cada punto es un Pokémon de tu listado. Púlsalo para abrir su ficha. El color indica su primer tipo.', 'Each point is a Pokémon in your list. Select it to open its details. Color indicates its first type.', '各点は一覧のポケモンです。選択すると詳細が開きます。色は最初のタイプです。'],
+  horizontalAxis: ['Eje horizontal', 'Horizontal axis', '横軸'],
+  verticalAxis: ['Eje vertical', 'Vertical axis', '縦軸'],
+  minimum: ['Mínimo', 'Minimum', '最小'],
+  maximum: ['Máximo', 'Maximum', '最大'],
   historicalStatsUnavailable: ['Estadísticas históricas no disponibles.', 'Historical stats unavailable.', '過去の種族値はありません。'],
   timelineTitle: ['Historial por generación', 'Generation timeline', '世代ごとの変化'],
   timelineHelp: ['Cambios de tipos y estadísticas base de PokéAPI. Las cifras entre paréntesis son diferencias respecto a la generación anterior. Especial de Gen I no se equipara con Ataque o Defensa Especial. No se suponen diferencias entre ediciones de una misma generación.', 'Type and base stat history from PokéAPI. Parentheses show changes from the previous generation. Gen I Special is not treated as Special Attack or Defense. Differences between editions in one generation are not assumed.', 'PokéAPIのタイプと種族値の履歴。括弧内は前世代との差です。第1世代のとくしゅは後の特攻・特防と比較しません。同世代のソフト別の差は推測しません。'],

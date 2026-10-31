@@ -1,17 +1,20 @@
-import { STATS, TYPES } from './metadata';
-import type { ImageSet, IllustrationId, TypeId } from './metadata';
+import { GEN_I_STATS, STATS, TYPES } from './metadata';
+import type { ImageSet, IllustrationId, TypeId, HistoricalStatId } from './metadata';
 import { LANGUAGES } from './localization';
 import type { Language } from './localization';
 import type { PokemonOrder, ViewMode } from './model';
 import { GENERATION_BY_ID, SPECIES_GENERATION, defaultIllustration, generationInfo, illustrationOptions, typesForGeneration } from './generations';
 import { isUiTheme } from './ui-theme';
 import type { UiTheme } from './ui-theme';
+import { parseRanges } from './stat-explorer';
+import type { StatRange } from './stat-explorer';
 import type { UniverseScope } from './universe';
 
 export interface ExplorationState {
   view: ViewMode; types: TypeId[]; query: string; order: PokemonOrder; chart: 'pie' | 'bars';
   segment: string | null; pokemonId: number | null; illustration: IllustrationId; imageSet: ImageSet; language: Language; onlyFavorites: boolean;
   generation: number; against: number | null; uiTheme: UiTheme; section: 'explore' | 'play' | 'teams';
+  statRanges?: StatRange[]; xStat?: HistoricalStatId; yStat?: HistoricalStatId;
   scope: UniverseScope; edition: string; dex: number | null;
 }
 
@@ -29,7 +32,9 @@ export function readExploration(url: URL, fallbackLanguage: Language = 'es-419',
   const pokemonId = Number(p.get('pokemon'));
   const rawSegment = p.get('segment');
   const segment = rawSegment === 'other' ? '' : rawSegment && rawSegment.split('+').length <= 2 && rawSegment.split('+').every(type => types.includes(type as TypeId)) ? [...new Set(rawSegment.split('+'))].sort().join('+') : null;
+  const stats = view === 'legacy' && generation === 1 ? GEN_I_STATS : STATS;
   return {
+    statRanges: parseRanges(p.get('stats')).filter(range => stats.some(stat => stat.id === range.id)), xStat: stats.some(stat => stat.id === p.get('x')) ? p.get('x') as HistoricalStatId : 'attack', yStat: stats.some(stat => stat.id === p.get('y')) ? p.get('y') as HistoricalStatId : 'speed',
     scope, edition, dex: scope === 'regional' && Number.isSafeInteger(Number(p.get('dex'))) && Number(p.get('dex')) > 0 ? Number(p.get('dex')) : null,
     section: p.get('section') === 'teams' ? 'teams' : p.get('section') === 'play' ? 'play' : 'explore',
     uiTheme: isUiTheme(p.get('ui')) ? p.get('ui') as UiTheme : fallbackTheme,
@@ -46,6 +51,6 @@ export function readExploration(url: URL, fallbackLanguage: Language = 'es-419',
 export function explorationUrl(url: URL, state: ExplorationState): URL {
   const result = new URL(url);
   const values = { gen: state.generation === 1 ? '' : String(state.generation), against: state.against?.toString() ?? '', view: state.view === 'current' ? '' : state.view, types: [...state.types].sort().join(','), q: state.query, order: state.order === 'number-asc' ? '' : state.order, chart: state.chart === 'pie' ? '' : state.chart, segment: state.segment === null ? '' : state.segment || 'other', pokemon: state.pokemonId?.toString() ?? '', art: state.illustration === (state.scope === 'introduced' ? defaultIllustration(state.generation) : `game:${state.edition}`) ? '' : state.illustration, game: state.imageSet === generationInfo(state.generation).games[0].id ? '' : state.imageSet, lang: state.language };
-  for (const [key, value] of Object.entries({ ...values, scope: state.scope === 'introduced' ? '' : state.scope, edition: state.edition === generationInfo(state.generation).games[0].id ? '' : state.edition, dex: state.dex?.toString() ?? '', section: state.section === 'explore' ? '' : state.section, ui: state.uiTheme, fav: state.onlyFavorites ? '1' : '' })) { if (value) result.searchParams.set(key, value); else result.searchParams.delete(key); }
+  for (const [key, value] of Object.entries({ ...values, stats: state.statRanges?.map(row => `${row.id}:${row.min}:${row.max}`).join(';') ?? '', x: state.xStat === 'attack' ? '' : state.xStat ?? '', y: state.yStat === 'speed' ? '' : state.yStat ?? '', scope: state.scope === 'introduced' ? '' : state.scope, edition: state.edition === generationInfo(state.generation).games[0].id ? '' : state.edition, dex: state.dex?.toString() ?? '', section: state.section === 'explore' ? '' : state.section, ui: state.uiTheme, fav: state.onlyFavorites ? '1' : '' })) { if (value) result.searchParams.set(key, value); else result.searchParams.delete(key); }
   return result;
 }
