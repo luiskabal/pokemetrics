@@ -579,3 +579,9 @@ html[data-ui-theme] .explorer-analysis .overview { padding: 14px; }
 .companion-pokemon .pokemon-image { width: 64px; height: 64px; flex-shrink: 0; }
 .companion-pokemon strong { display: block; margin-bottom: 5px; }
 @media(min-width: 900px) { .play-workspace.with-companion { grid-template-columns: minmax(0, 1fr) 330px; } .play-companion { position: sticky; top: 16px; } }
+
+.timeline-content { padding: 16px; }
+.pokemon-timeline { list-style: none; padding: 0 0 0 18px; border-left: 3px solid var(--line); display: grid; gap: 20px; }
+.pokemon-timeline li { border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+.pokemon-timeline h3 { margin: 0 0 8px; }
+.stat-delta { font-weight: 750; margin-left: 4px; }

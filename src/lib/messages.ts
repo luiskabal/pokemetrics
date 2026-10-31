@@ -1,4 +1,8 @@
 export const MESSAGES = {
+  historicalStatsUnavailable: ['Estadísticas históricas no disponibles.', 'Historical stats unavailable.', '過去の種族値はありません。'],
+  timelineTitle: ['Historial por generación', 'Generation timeline', '世代ごとの変化'],
+  timelineHelp: ['Cambios de tipos y estadísticas base de PokéAPI. Las cifras entre paréntesis son diferencias respecto a la generación anterior. Especial de Gen I no se equipara con Ataque o Defensa Especial. No se suponen diferencias entre ediciones de una misma generación.', 'Type and base stat history from PokéAPI. Parentheses show changes from the previous generation. Gen I Special is not treated as Special Attack or Defense. Differences between editions in one generation are not assumed.', 'PokéAPIのタイプと種族値の履歴。括弧内は前世代との差です。第1世代のとくしゅは後の特攻・特防と比較しません。同世代のソフト別の差は推測しません。'],
+  typeChanged: ['Cambio de tipos', 'Type change', 'タイプ変更'],
   companionTitle: ['Pokédex de consulta', 'Pokédex companion', 'ポケモン図鑑'],
   companionHelp: ['Referencia manual: elige la edición y busca un Pokémon. No se leen datos de tu ROM. En móvil, abrir esta consulta pausa el juego.', 'Manual reference: choose the edition and find a Pokémon. Your ROM is not inspected. Opening this panel on mobile pauses the game.', '手動の参照です。ROMは読み取りません。モバイルでは図鑑を開くとゲームを一時停止します。'],
   appTeams: ['Equipos', 'Teams', 'チーム'],

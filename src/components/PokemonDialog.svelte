@@ -19,6 +19,7 @@
   let localImageSet = $state<ImageSet | null>(null);
   let spritesOpen = $state(false);
   let movesOpen = $state(false);
+  let timelineOpen = $state(false);
   const imageSet = $derived(localImageSet ?? defaultImageSet);
   let dialog: HTMLDialogElement;
   // close llega después: varias navegaciones rápidas pueden dejar más de un cierre de estado pendiente.
@@ -32,7 +33,7 @@
 </script>
 
 <dialog bind:this={dialog} class="pokemon-dialog" id="pokemon-dialog" aria-labelledby="pokemon-dialog-name" aria-describedby="pokemon-dialog-view"
-  onclose={() => { localImageSet = null; spritesOpen = false; movesOpen = false; if (pendingStateCloses) pendingStateCloses--; else onClose(); }} onpointerdown={event => { if (event.target === dialog) dialog.close(); }}
+  onclose={() => { localImageSet = null; spritesOpen = false; movesOpen = false; timelineOpen = false; if (pendingStateCloses) pendingStateCloses--; else onClose(); }} onpointerdown={event => { if (event.target === dialog) dialog.close(); }}
   style:--pokemon-tint={type?.tint} style:--pokemon-color={type?.color} style:--pokemon-ink={type?.ink}>
   {#if pokemon}
     {#key pokemon.id}
@@ -52,6 +53,7 @@
         <PokemonStats {pokemon} {view}/>
       </div>
       <PokemonMatchups {pokemon} {view}/>
+      <details class="detail-section" id="pokemon-timeline" bind:open={timelineOpen}><summary>{$t('timelineTitle')}</summary>{#if timelineOpen}{#await import('./PokemonTimeline.svelte')}<p role="status">{$t('infoLoading')}</p>{:then module}<module.default {pokemon}/>{:catch}<p role="status">{$t('infoError')}</p>{/await}{/if}</details>
       <details class="detail-section" id="pokemon-moves" bind:open={movesOpen}><summary>{$t('levelMoves')}</summary>{#if movesOpen}{#await import('./PokemonMoves.svelte')}<p role="status">{$t('infoLoading')}</p>{:then module}<module.default id={pokemon.id}/>{:catch}<p role="status">{$t('infoError')}</p>{/await}{/if}</details>
       <details class="sprite-details" bind:open={spritesOpen}>
         <summary>{$t('gameImages')}</summary>
