@@ -569,3 +569,13 @@ html[data-ui-theme] .explorer-analysis .overview { padding: 14px; }
   .play-volume .range { flex: 1; }
   .game-frame { height: 580px; min-height: 460px; }
 }
+.play-workspace { display: grid; gap: 20px; align-items: start; }
+.play-game-column { min-width: 0; }
+.play-companion { padding: 16px; min-width: 0; }
+.play-companion summary { cursor: pointer; font-weight: 750; }
+.play-companion-content { display: grid; gap: 10px; margin-top: 12px; }
+.companion-results { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; max-height: 65vh; overflow-y: auto; }
+.companion-pokemon { display: flex; align-items: center; text-align: start; width: 100%; gap: 8px; padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.companion-pokemon .pokemon-image { width: 64px; height: 64px; flex-shrink: 0; }
+.companion-pokemon strong { display: block; margin-bottom: 5px; }
+@media(min-width: 900px) { .play-workspace.with-companion { grid-template-columns: minmax(0, 1fr) 330px; } .play-companion { position: sticky; top: 16px; } }

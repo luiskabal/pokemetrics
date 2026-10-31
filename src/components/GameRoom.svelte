@@ -6,7 +6,9 @@
   import { language, t } from '../lib/i18n';
   import { LOCALES } from '../lib/localization';
   import type { MessageKey } from '../lib/localization';
-  let { active }: { active: boolean } = $props();
+  let { active, referenceOpen, onEdition, onReference }: { active: boolean; referenceOpen: boolean; onEdition: (game: string) => void; onReference: (pokemon: import('../lib/model').Pokemon) => void } = $props();
+  let companionOpen = $state(false);
+  function inspect(pokemon: import('../lib/model').Pokemon) { send('pause'); onReference(pokemon); }
   let rom = $state.raw<GameRom | null>(null);
   let session = $state('');
   let phase = $state<'empty' | 'loading' | 'ready' | 'playing' | 'paused' | 'error'>('empty');
@@ -91,6 +93,7 @@
     catch { error = 'playFullscreenError'; }
   }
 
+  $effect(() => { if (referenceOpen) send('pause'); });
   $effect(() => { active; if (rom) send('visibility', { active }); });
   $effect(() => { volume; if (started) send('volume', { volume }); });
   onMount(() => {
@@ -123,6 +126,7 @@
   <div class="card play-library"><label class="rom-label" for="rom-file">{$t(rom ? 'playChangeGame' : 'playLoadRom')}</label><input id="rom-file" class="file-input" type="file" accept=".gb,.gbc" disabled={busy} onchange={chooseRom} aria-describedby="rom-help"/><p class="list-help" id="rom-help">{$t('playRomHelp')}</p>{#if rom}<p class="rom-identity"><strong>{rom.title}</strong><span>{rom.filename}</span><small>SHA-256 · {rom.hash.slice(0, 12)}…</small></p>{/if}</div>
   {#if error}<p class="app-notice play-error" role="alert">{$t(error)}</p>{/if}
   {#if storageFailed}<p class="app-notice play-error" role="status">{$t('playStorageError')}</p>{/if}
+  <div class="play-workspace" class:with-companion={companionOpen}><div class="play-game-column">
   {#if rom}
     <div class="play-screen-shell" bind:this={screen}>
       <div class="play-controls" role="group" aria-label={$t('playControls')}>
@@ -139,5 +143,6 @@
     </div>
     <p class="play-status" role="status">{$t(phase === 'loading' ? 'playLoading' : phase === 'ready' ? 'playReady' : phase === 'paused' ? 'playPaused' : phase === 'playing' ? 'playRunning' : 'playLoadError')}{#if savedAt} · {$t('playLastSave')} <time datetime={new Date(savedAt).toISOString()}>{new Date(savedAt).toLocaleString(LOCALES[$language])}</time>{/if}</p>
   {:else}<div class="play-empty"><div class="play-console" aria-hidden="true"><span>GAME BOY</span><svg viewBox="0 0 160 144" fill="none" stroke="currentColor" stroke-width="3"><path d="M50 45h60v54H50zM58 53h44v30H58zM61 91h9m20 0h5"/><path d="M30 72h12m76 0h12"/></svg><small>● ●</small></div><p>{$t('playEmpty')}</p></div>{/if}
+  </div><details class="play-companion card" bind:open={companionOpen} ontoggle={event => { if (event.currentTarget.open && matchMedia('(max-width: 899px)').matches) send('pause'); }}><summary>{$t('companionTitle')}</summary>{#if companionOpen}{#await import('./PlayCompanion.svelte')}<p role="status">{$t('infoLoading')}</p>{:then module}<module.default {onEdition} onInspect={inspect}/>{:catch}<p role="status">{$t('infoError')}</p>{/await}{/if}</details></div>
   <div class="play-help"><h2>{$t('playControls')}</h2><p>{$t('playKeyboard')}</p><p>{$t('playSaveHelp')}</p><p>{$t('playLanguageHelp')}</p><p>{$t('playPrivacy')}</p><a href={`${import.meta.env.BASE_URL}emulator/licenses.html`} target="_blank" rel="noopener noreferrer">{$t('playLicenses')} ↗</a></div>
 </section>

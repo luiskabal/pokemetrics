@@ -1,4 +1,6 @@
 export const MESSAGES = {
+  companionTitle: ['Pokédex de consulta', 'Pokédex companion', 'ポケモン図鑑'],
+  companionHelp: ['Referencia manual: elige la edición y busca un Pokémon. No se leen datos de tu ROM. En móvil, abrir esta consulta pausa el juego.', 'Manual reference: choose the edition and find a Pokémon. Your ROM is not inspected. Opening this panel on mobile pauses the game.', '手動の参照です。ROMは読み取りません。モバイルでは図鑑を開くとゲームを一時停止します。'],
   appTeams: ['Equipos', 'Teams', 'チーム'],
   teamsTitle: ['Construye tu equipo', 'Build your team', 'チームを作ろう'],
   teamsIntro: ['Hasta seis Pokémon, con estadísticas y reglas de la época del juego elegido. Se guardan en este navegador.', 'Up to six Pokémon, using the chosen game era’s stats and rules. Saved in this browser.', '選んだゲームの時代の能力値とルールで最大6匹。このブラウザーに保存します。'],

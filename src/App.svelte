@@ -59,6 +59,9 @@
   let favoriteSaveFailed = $state(false);
   let comparisonOpen = $state(false);
   let against = $state<number | null>(initialLocation.against);
+  let referencePokemon = $state.raw<Pokemon | null>(null);
+  const referenceLink = $derived.by(() => { const url = new URL(shareUrl); url.searchParams.delete('section'); url.searchParams.set('scope', 'national'); if (referencePokemon) url.searchParams.set('pokemon', String(referencePokemon.id)); return url.href; });
+  async function referenceEvolution(id: number) { const era = $generation; const game = $edition; const data = await loadUniverse(era, 'national', game, null, new AbortController().signal); if (section === 'play' && era === $generation && game === $edition) referencePokemon = data.pokemon.find(pokemon => pokemon.id === id) ?? null; }
   let selectedPokemonId = $state<number | null>(initialLocation.pokemonId);
   let loadState = $state<LoadState>({ status: 'loading', completed: 0 });
   let controller: AbortController | null = null;
@@ -83,6 +86,7 @@
   const comparedPokemon = $derived(compareIds.map(id => pokemon.find(entry => entry.id === id)!));
   const updating = $derived(loadState.status === 'loading' || loadState.status === 'refreshing');
   const savedDate = $derived(savedAt === null ? null : new Date(savedAt));
+  const referenceOpen = $derived(section === 'play' && referencePokemon !== null);
   const selectedPokemon = $derived(pokemon.find(entry => entry.id === selectedPokemonId) ?? null);
   const announcement = $derived(active
     ? `${$t(legacy ? 'legacy' : 'current')}. ${$t('announcement', { count: analysis.matches.length, total: analysis.total, percent: percentage(analysis.matches.length, analysis.total, $language) })}`
@@ -356,7 +360,7 @@
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
   </main>
 
-  <main id="play-main" tabindex="-1" hidden={section !== 'play'}>{#if gameRoom}{#await gameRoom}<p class="description" role="status">{$t('playLoading')}</p>{:then module}<module.default active={section === 'play'}/>{:catch}<p class="app-notice" role="alert">{$t('playLoadError')}</p><button class="btn btn-sm" type="button" onclick={() => gameRoom = import('./components/GameRoom.svelte')}>{$t('retry')}</button>{/await}{/if}</main>
+  <main id="play-main" tabindex="-1" hidden={section !== 'play'}>{#if gameRoom}{#await gameRoom}<p class="description" role="status">{$t('playLoading')}</p>{:then module}<module.default active={section === 'play'} {referenceOpen} onEdition={game => { referencePokemon = null; changeEdition(game); }} onReference={pokemon => referencePokemon = pokemon}/>{:catch}<p class="app-notice" role="alert">{$t('playLoadError')}</p><button class="btn btn-sm" type="button" onclick={() => gameRoom = import('./components/GameRoom.svelte')}>{$t('retry')}</button>{/await}{/if}</main>
 
   <main id="teams-main" tabindex="-1" hidden={section !== 'teams'}>{#if teamBuilder}{#await teamBuilder}<p role="status">{$t('infoLoading')}</p>{:then module}<module.default onEdition={changeEdition}/>{:catch}<p role="alert">{$t('infoError')}</p><button class="btn btn-sm" onclick={() => teamBuilder = import('./components/TeamBuilder.svelte')}>{$t('retry')}</button>{/await}{/if}</main>
   <footer class="connection" id="connection" data-state={loadState.status} hidden={section !== 'explore'}>
@@ -374,4 +378,4 @@
 </div>
 {#if compareIds.length && section === 'explore'}<aside class="compare-tray" aria-label={$t('compareTitle')}><span role="status">{$t('compareCount', { count: compareIds.length })}</span><button class="btn btn-sm" id="open-comparison" type="button" disabled={compareIds.length < 2} onclick={() => comparisonOpen = true}>{$t('compare')}</button><button class="btn btn-sm" type="button" onclick={() => compareIds = []}>{$t('clear')}</button></aside>{/if}
 <PokemonComparison pokemon={comparedPokemon} {view} {illustration} open={comparisonOpen && section === 'explore'} onClose={() => comparisonOpen = false} onRemove={toggleCompare}/>
-<PokemonDialog pokemon={section === 'explore' ? selectedPokemon : null} {view} {shareUrl} isFavorite={selectedPokemon !== null && favorites.has(selectedPokemon.id)} onFavorite={toggleFavorite} onEvolution={openPokemon} defaultImageSet={imageSet} defaultIllustration={illustration} onClose={() => openPokemon(null)}/>
+<PokemonDialog pokemon={section === 'play' ? referencePokemon : section === 'explore' ? selectedPokemon : null} view={section === 'play' ? 'legacy' : view} shareUrl={section === 'play' ? referenceLink : shareUrl} isFavorite={favorites.has((section === 'play' ? referencePokemon : selectedPokemon)?.id ?? 0)} onFavorite={toggleFavorite} onEvolution={section === 'play' ? referenceEvolution : openPokemon} defaultImageSet={section === 'play' ? $edition : imageSet} defaultIllustration={section === 'play' ? `game:${$edition}` : illustration} onClose={() => { if (section === 'play') referencePokemon = null; else openPokemon(null); }}/>
