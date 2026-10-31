@@ -498,6 +498,12 @@ html[data-ui-theme] .explorer-analysis .overview { padding: 14px; }
 }
 
 .site-navigation { display: flex; gap: 6px; }
+.detail-section { padding: 22px 28px; border-top: 1px solid var(--line); }
+.detail-section h3 { margin-bottom: 10px; font-size: 16px; }
+.matchup-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 16px 0; }
+.matchup-groups h4 { font-size: 12px; margin-bottom: 8px; }
+.matchup-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.matchup-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; }
 .pokemon-stats .stat-fill, .pokemon-stats .stat-radar .radar-marker { background: var(--stat-color); fill: var(--stat-color); }
 .pokemon-stats .stat-radar .radar-axis { stroke: var(--stat-color); opacity: .5; }
 .pokemon-stats .stat-row dt::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: var(--stat-color); }

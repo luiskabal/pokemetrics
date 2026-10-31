@@ -1,4 +1,12 @@
 export const MESSAGES = {
+  defensiveMatchups: ['Efectividad defensiva', 'Defensive matchups', '防御タイプ相性'],
+  weaknesses: ['Debilidades', 'Weaknesses', '弱点'],
+  resistances: ['Resistencias', 'Resistances', '耐性'],
+  immunities: ['Inmunidades', 'Immunities', '無効'],
+  none: ['Ninguna', 'None', 'なし'],
+  matchupsHistorical: ['Reglas y tipos de Gen {generation}.', 'Gen {generation} rules and types.', '第{generation}世代のルールとタイプ。'],
+  matchupsCurrent: ['Reglas y tipos actuales.', 'Current rules and types.', '現在のルールとタイプ。'],
+  matchupsScope: ['Efectividad por tipos; las habilidades, objetos y otros efectos pueden modificarla.', 'Type effectiveness; abilities, items and other effects can modify it.', 'タイプによる相性です。特性・持ち物などで変わる場合があります。'],
   shownPokemon: ['Mostrando {shown} de {total}', 'Showing {shown} of {total}', '{total}匹中{shown}匹を表示'],
   showMorePokemon: ['Mostrar {count} más', 'Show {count} more', 'さらに{count}匹を表示'],
   listChunkHelp: ['La búsqueda, el orden y el CSV se aplican a todos los resultados.', 'Search, sorting and CSV use all results.', '検索・並べ替え・CSVにはすべての結果を使用します。'],

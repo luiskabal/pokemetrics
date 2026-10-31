@@ -13,7 +13,8 @@
     "update:locales": "node scripts/update-locales.mjs",
     "update:generations": "node scripts/update-generations.mjs",
     "update:data": "node scripts/update-data.mjs",
-    "update:media": "python scripts/update-media.py"
+    "update:media": "python scripts/update-media.py",
+    "update:types": "node scripts/update-types.mjs"
   },
   "dependencies": { "svelte": "5.57.3" },
   "devDependencies": {

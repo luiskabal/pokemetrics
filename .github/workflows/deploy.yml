@@ -35,6 +35,8 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       - run: npm run update:media
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      - run: npm run update:types
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       - run: npm run check
       - run: npm test
       - run: npm run build

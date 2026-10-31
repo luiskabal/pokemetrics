@@ -9,6 +9,7 @@
   import ImageSelector from './ImageSelector.svelte';
   import IllustrationGallery from './IllustrationGallery.svelte';
   import PokemonStats from './PokemonStats.svelte';
+  import PokemonMatchups from './PokemonMatchups.svelte';
   import ShareLink from './ShareLink.svelte';
   import FavoriteButton from './FavoriteButton.svelte';
   import PokemonDetails from './PokemonDetails.svelte';
@@ -49,6 +50,7 @@
         </div>
         <PokemonStats {pokemon} {view}/>
       </div>
+      <PokemonMatchups {pokemon} {view}/>
       <details class="sprite-details" bind:open={spritesOpen}>
         <summary>{$t('gameImages')}</summary>
         {#if spritesOpen}
