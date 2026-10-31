@@ -4,6 +4,7 @@ const catalogs = new Map<string, Record<string, Preview>>();
 const pending = new Map<string, Promise<void>>();
 export const needsMediaPreview = (url: string | null) => !!url && url.startsWith(PREFIX) && (/\.(webp|gif)(?:\?|$)/i.test(url) || url.includes('/official-artwork/'));
 function groupFor(url: string): string { const match = url.slice(PREFIX.length).match(/^versions\/(generation-[a-z]+)\/([a-z0-9-]+)\//); return match ? `${match[1]}-${match[2]}` : 'artwork'; }
+export function mediaCatalogUrl(url: string | null): string | null { return needsMediaPreview(url) ? `${import.meta.env.BASE_URL}media/catalogs/${groupFor(url!)}.json` : null; }
 export function loadMediaCatalog(url: string | null): Promise<void> {
   if (!needsMediaPreview(url)) return Promise.resolve();
   const group = groupFor(url!);

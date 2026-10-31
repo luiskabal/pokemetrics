@@ -22,7 +22,7 @@
   <div class="illustration-options" role="group" aria-label={$t('chooseIllustration')}>
     {#each illustrations as image (image.id)}
       <button type="button" class="btn btn-sm" aria-pressed={current.id === image.id} data-artwork={image.id} disabled={!image.url}
-        onpointerenter={event => { if (event.pointerType === 'mouse' && image.url) selectedId = image.id; }}
+        onpointermove={event => { if (event.pointerType === 'mouse' && image.url) selectedId = image.id; }}
         onfocus={() => selectedId = image.id} onclick={() => selectedId = image.id}>{imageName(image.id, $language)}</button>
     {/each}
   </div>

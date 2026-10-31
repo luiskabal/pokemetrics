@@ -15,8 +15,12 @@
   import TypeBadge from './TypeBadge.svelte';
   import ShareLink from './ShareLink.svelte';
   let { onEdition }: { onEdition: (game: string) => void } = $props();
-  const incoming = sharedTeam(new URL(location.href));
-  let teams = $state<LocalTeam[]>([...readTeams(), ...(incoming ? [incoming] : [])]);
+  const storedTeams = readTeams();
+  const shared = sharedTeam(new URL(location.href));
+  const existing = shared ? storedTeams.find(team => team.game === shared.game && team.name === shared.name && team.members.join(',') === shared.members.join(',')) : null;
+  const incoming = existing ?? shared;
+  let teams = $state<LocalTeam[]>([...storedTeams, ...(incoming && !existing ? [incoming] : [])]);
+  function syncLink(team: LocalTeam) { history.replaceState(null, '', teamUrl(new URL(location.href), team)); }
   let selectedId = $state<string | null>(incoming?.id ?? null);
   const current = $derived(teams.find(team => team.id === selectedId && team.game === $edition) ?? teams.find(team => team.game === $edition) ?? null);
   let pool = $state.raw<Pokemon[]>([]); let query = $state(''); let loading = $state(true); let failed = $state(false); let saveFailed = $state(false); let retry = $state(0);
@@ -30,12 +34,12 @@
   $effect(() => { retry; const era = $generation; const game = $edition; const controller = new AbortController(); loading = true; failed = false; pool = []; void loadUniverse(era, 'national', game, null, controller.signal).then(data => { if (!controller.signal.aborted) pool = data.pokemon; }).catch(() => { if (!controller.signal.aborted) failed = true; }).finally(() => { if (!controller.signal.aborted) loading = false; }); return () => controller.abort(); });
   function update(change: Partial<LocalTeam>) {
     const base = current ?? { id: crypto.randomUUID(), game: $edition, name: $t('myTeam'), members: [] };
-    const next = { ...base, ...change }; teams = [...teams.filter(team => team.id !== next.id), next]; selectedId = next.id; saveFailed = !saveTeams(teams);
+    const next = { ...base, ...change }; teams = [...teams.filter(team => team.id !== next.id), next]; selectedId = next.id; saveFailed = !saveTeams(teams); syncLink(next);
   }
-  function newTeam() { const team = { id: crypto.randomUUID(), game: $edition, name: $t('myTeam'), members: [] }; teams = [...teams, team]; selectedId = team.id; saveFailed = !saveTeams(teams); }
+  function newTeam() { const team = { id: crypto.randomUUID(), game: $edition, name: $t('myTeam'), members: [] }; teams = [...teams, team]; selectedId = team.id; saveFailed = !saveTeams(teams); syncLink(team); }
 </script>
 <section class="team-builder" aria-labelledby="teams-title"><h1 id="teams-title">{$t('teamsTitle')}</h1><p class="description">{$t('teamsIntro')}</p>
-  <div class="game-context-controls"><label>{$t('contextGame')}<select class="select" id="team-game" value={$edition} onchange={event => onEdition(event.currentTarget.value)}>{#each GENERATIONS as era}<optgroup label={localizedName(era.names, $language, era.roman)}>{#each era.games as game}<option value={game.id}>{imageName(game.id, $language)}</option>{/each}</optgroup>{/each}</select></label><label>{$t('savedTeams')}<select class="select" id="team-profile" value={current?.id ?? ''} onchange={event => selectedId = event.currentTarget.value}><option value="" disabled>{$t('chooseTeam')}</option>{#each profiles as team}<option value={team.id}>{team.name}</option>{/each}</select></label><label>{$t('teamName')}<input class="input" id="team-name" maxlength="64" value={current?.name ?? ''} onchange={event => update({ name: event.currentTarget.value.trim() || $t('myTeam') })}/></label></div>
+  <div class="game-context-controls"><label>{$t('contextGame')}<select class="select" id="team-game" value={$edition} onchange={event => onEdition(event.currentTarget.value)}>{#each GENERATIONS as era}<optgroup label={localizedName(era.names, $language, era.roman)}>{#each era.games as game}<option value={game.id}>{imageName(game.id, $language)}</option>{/each}</optgroup>{/each}</select></label><label>{$t('savedTeams')}<select class="select" id="team-profile" value={current?.id ?? ''} onchange={event => { selectedId = event.currentTarget.value; syncLink(teams.find(team => team.id === selectedId)!); }}><option value="" disabled>{$t('chooseTeam')}</option>{#each profiles as team}<option value={team.id}>{team.name}</option>{/each}</select></label><label>{$t('teamName')}<input class="input" id="team-name" maxlength="64" value={current?.name ?? ''} onchange={event => update({ name: event.currentTarget.value.trim() || $t('myTeam') })}/></label></div>
   <div class="list-actions"><button class="btn btn-sm" id="new-team" onclick={newTeam}>{$t('newTeam')}</button>{#if current}<ShareLink url={link} id="share-team"/>{/if}<span role="status">{current?.members.length ?? 0} / 6</span></div>
   {#if saveFailed}<p role="status" class="app-notice">{$t('teamStorageError')}</p>{/if}
   {#if loading}<p role="status">{$t('infoLoading')}</p>{:else if failed}<p role="status">{$t('infoError')}</p><button class="btn btn-sm" onclick={() => retry++}>{$t('retry')}</button>{:else}

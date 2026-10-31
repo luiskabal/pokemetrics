@@ -575,8 +575,8 @@ html[data-ui-theme] .explorer-analysis .overview { padding: 14px; }
 .play-companion summary { cursor: pointer; font-weight: 750; }
 .play-companion-content { display: grid; gap: 10px; margin-top: 12px; }
 .companion-results { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; max-height: 65vh; overflow-y: auto; }
-.companion-pokemon { display: flex; align-items: center; text-align: start; width: 100%; gap: 8px; padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
-.companion-pokemon .pokemon-image { width: 64px; height: 64px; flex-shrink: 0; }
+.companion-pokemon { display: flex; align-items: center; text-align: start; width: 100%; gap: 8px; padding: 8px; background: var(--color-base-100); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.companion-pokemon img { width: 64px; height: 64px; flex-shrink: 0; }
 .companion-pokemon strong { display: block; margin-bottom: 5px; }
 @media(min-width: 900px) { .play-workspace.with-companion { grid-template-columns: minmax(0, 1fr) 330px; } .play-companion { position: sticky; top: 16px; } }
 
@@ -597,7 +597,7 @@ html[data-ui-theme] .explorer-analysis .overview { padding: 14px; }
 #stat-scatter { width: 100%; color: var(--ink); }
 #stat-scatter text { fill: currentColor; font-size: 11px; }
 .scatter-axis { stroke: currentColor; fill: none; }
-#stat-scatter circle { cursor: pointer; stroke: var(--surface); stroke-width: .6; }
+#stat-scatter circle { cursor: pointer; stroke: var(--color-base-100); stroke-width: .6; }
 #stat-scatter circle:hover, #stat-scatter circle:focus { r: 7px; stroke: var(--ink); stroke-width: 2; outline: none; }
 
 .capture-tracker { padding: 12px 0; border-bottom: 1px solid var(--line); margin-bottom: 10px; }
@@ -618,3 +618,8 @@ html[data-ui-theme] .explorer-analysis .overview { padding: 14px; }
 .game-slot input { width: 100%; }
 .game-slot time { font-size: 11px; }
 @media(max-width: 600px) { .slot-grid { grid-template-columns: 1fr; } .game-slot img, .slot-placeholder { max-height: 144px; } }
+
+.offline-content { padding: 16px 0; display: grid; gap: 10px; font-size: 13px; }
+.offline-content p { margin: 0; }
+.offline-content ul { padding-left: 20px; max-height: 150px; overflow-y: auto; }
+.offline-content .progress { width: 100%; }

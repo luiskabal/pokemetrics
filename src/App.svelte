@@ -2,6 +2,7 @@
   import { onMount, tick, untrack } from 'svelte';
   import { captureProfile, matchesCapture } from './lib/captures';
   import type { CaptureStatus } from './lib/captures';
+  import OfflineManager from './components/OfflineManager.svelte';
   import StatFilters from './components/StatFilters.svelte';
   import { availableStats, filterStatRanges } from './lib/stat-explorer';
   import type { StatRange } from './lib/stat-explorer';
@@ -305,6 +306,7 @@
   </header>
   <details class="preferences-panel"><summary>{$t('displayPreferences')} <small>{$t(UI_THEMES.find(option => option.id === uiTheme)!.label)} · {LANGUAGES.find(option => option.id === $language)!.label}</small></summary><div class="preferences"><AppearanceSelector value={uiTheme} onChange={value => { if (value !== uiTheme) { checkpoint(); uiTheme = value; } }}/><LanguageSelector/></div></details>
 
+  <OfflineManager {pokemon} {dex} era={$generation} {scope} game={$edition} {illustration} {imageSet}/>
   <main id="explore-main" tabindex="-1" hidden={section !== 'explore'}>
     <section class="intro" aria-labelledby="page-title">
       <div><p class="eyebrow">{$t('generationEyebrow', { total: scope === 'introduced' ? definition.speciesIds.length : pokemon.length })}</p><h1 id="page-title">{$t('regionTitle', { region: regionLabel })}</h1><p class="intro-copy">{$t('generationIntro')}</p></div>

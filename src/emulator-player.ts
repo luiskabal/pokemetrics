@@ -23,6 +23,7 @@ const send = (type: string, values: Partial<PlayerMessage> = {}) => parent.postM
 async function thumbnail(state: Uint8Array): Promise<string | null> {
   const emulator = runtime.EJS_emulator!; const manager = emulator.gameManager;
   pause();
+  // El núcleo necesita avanzar para capturar; restauramos el estado para no avanzar la partida.
   try {
     try { manager.FS.unlink('/screenshot.png'); } catch { /* La primera captura aún no existe. */ }
     manager.functions.screenshot(); emulator.play();

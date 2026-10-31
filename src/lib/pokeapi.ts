@@ -177,6 +177,6 @@ export async function loadGeneration(generation: number, signal: AbortSignal, fo
   if (!response.ok) throw Error(`Generation data HTTP ${response.status}`);
   const dataset = parseGenerationDataset(await response.json(), generation);
   requestSignal.throwIfAborted();
-  writeCache(dataset.pokemon, generation, dataset.savedAt);
+  if (response.headers.get('X-Pokemetrics-Offline') !== '1') writeCache(dataset.pokemon, generation, dataset.savedAt);
   return dataset;
 }
