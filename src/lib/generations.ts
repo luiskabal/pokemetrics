@@ -12,5 +12,5 @@ export const VERSION_GENERATIONS = data.versionGenerations as Record<string, num
 export const VERSION_GROUP_GENERATIONS = data.versionGroupGenerations as Record<string, number>;
 export function generationInfo(id: number): GenerationDefinition { return GENERATION_BY_ID.get(id)!; }
 export function typesForGeneration(id: number) { return TYPES.filter(type => (data.typeGenerations as Record<TypeId, number>)[type.id] <= id); }
-export function illustrationOptions(id: number): { id: IllustrationId }[] { const generation = generationInfo(id); return [...(generation.artworks.length ? generation.artworks.map(id => ({ id })) : generation.games.map(game => ({ id: `game:${game.id}` as IllustrationId }))), { id: 'current' }]; }
+export function illustrationOptions(id: number): { id: IllustrationId }[] { const generation = generationInfo(id); return [...generation.artworks.map(id => ({ id })), ...generation.games.map(game => ({ id: `game:${game.id}` as IllustrationId })), { id: 'current' }]; }
 export function defaultIllustration(id: number): IllustrationId { const generation = generationInfo(id); return generation.artworks[0] ?? `game:${generation.games[0].id}`; }

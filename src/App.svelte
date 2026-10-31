@@ -4,7 +4,10 @@
   import type { IllustrationId, ImageSet, TypeId } from './lib/metadata';
   import type { LoadState, Pokemon, ViewMode } from './lib/model';
   import { analyzePokemon, filterAndSortPokemon, percentage, pokemonInSegment } from './lib/analysis';
-  import { loadGeneration, readCache } from './lib/pokeapi';
+  import { readCache } from './lib/pokeapi';
+  import { loadUniverse } from './lib/universe';
+  import type { UniverseScope } from './lib/universe';
+  import GameContext from './components/GameContext.svelte';
   import TypeFilters from './components/TypeFilters.svelte';
   import DistributionChart from './components/DistributionChart.svelte';
   import TypeIcon from './components/TypeIcon.svelte';
@@ -19,8 +22,8 @@
   import type { ExplorationState } from './lib/navigation';
   import type { PokemonOrder } from './lib/model';
   import { readFavorites, saveFavorites } from './lib/favorites';
-  import { generation } from './lib/generation-state';
-  import { GENERATIONS, SPECIES_GENERATION, defaultIllustration, generationInfo, typesForGeneration } from './lib/generations';
+  import { generation, edition } from './lib/generation-state';
+  import { GENERATIONS, GAME_BY_ID, SPECIES_GENERATION, defaultIllustration, generationInfo, typesForGeneration } from './lib/generations';
   import GenerationComparison from './components/GenerationComparison.svelte';
   import AppearanceSelector from './components/AppearanceSelector.svelte';
   import { UI_THEMES, readUiTheme, resolvedUiTheme, saveUiTheme } from './lib/ui-theme';
@@ -31,8 +34,11 @@
   let gameRoom = $state<Promise<typeof import('./components/GameRoom.svelte')> | null>(initialLocation.section === 'play' ? import('./components/GameRoom.svelte') : null);
   const sectionScroll = { explore: 0, play: 0 };
   generation.set(initialLocation.generation);
-  const initialCache = readCache(initialLocation.generation);
-  let dataGeneration = initialLocation.generation;
+  edition.set(initialLocation.edition);
+  let scope = $state<UniverseScope>(initialLocation.scope);
+  let dex = $state<number | null>(initialLocation.dex);
+  const initialCache = initialLocation.scope === 'introduced' ? readCache(initialLocation.generation) : null;
+  let dataContext = `${initialLocation.generation}/${initialLocation.scope}/${initialLocation.edition}/${initialLocation.dex}`;
   language.set(initialLocation.language);
   let pokemon = $state.raw<Pokemon[]>(initialCache?.pokemon ?? []);
   let savedAt = $state<number | null>(initialCache?.savedAt ?? null);
@@ -81,7 +87,7 @@
     ? `${$t(legacy ? 'legacy' : 'current')}. ${$t('announcement', { count: analysis.matches.length, total: analysis.total, percent: percentage(analysis.matches.length, analysis.total, $language) })}`
     : $t('emptyAnnouncement'));
   const connectionMessage = $derived.by(() => {
-    const values = { completed: loadState.completed, total: definition.speciesIds.length };
+    const values = { completed: loadState.completed, total: scope === 'introduced' ? definition.speciesIds.length : pokemon.length };
     if (loadState.completed && loadState.status === 'loading') return $t('loadingProgress', values);
     if (loadState.completed && loadState.status === 'refreshing') return $t('refreshingProgress', values);
     return $t(loadState.status, values);
@@ -107,7 +113,7 @@
   });
 
   $effect(() => {
-    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against, uiTheme, section };
+    const state: ExplorationState = { view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against, uiTheme, section, scope, edition: $edition, dex };
     const url = explorationUrl(new URL(location.href), state).href;
     if (url !== location.href) history.replaceState(null, '', url);
     shareUrl = url;
@@ -118,6 +124,7 @@
   function restoreLocation(): void {
     const next = readExploration(new URL(location.href), $language);
     section = next.section;
+    scope = next.scope; dex = next.dex; edition.set(next.edition);
     if (section === 'play' && !gameRoom) gameRoom = import('./components/GameRoom.svelte');
     view = next.view; selectedTypes = next.types; query = next.query; order = next.order; chart = next.chart;
     selectedSegment = next.segment; selectedPokemonId = next.pokemonId; imageSet = next.imageSet; illustration = next.illustration;
@@ -131,7 +138,7 @@
 
   function openPokemon(id: number | null): void {
     if (id === selectedPokemonId) return;
-    if (id !== null && SPECIES_GENERATION.get(id) !== $generation) { changeGeneration(SPECIES_GENERATION.get(id)!, id); return; }
+    if (id !== null && !pokemon.some(entry => entry.id === id)) { changeGeneration(SPECIES_GENERATION.get(id)!, id); return; }
     checkpoint(); selectedPokemonId = id;
   }
 
@@ -149,11 +156,24 @@
   function changeGeneration(id: number, pokemonId: number | null = null): void {
     checkpoint();
     const next = generationInfo(id);
+    edition.set(next.games[0].id); dex = null;
+    if (pokemonId !== null) scope = 'introduced';
     selectedPokemonId = pokemonId; selectedSegment = null; query = ''; compareIds = []; comparisonOpen = false;
-    illustration = defaultIllustration(id); imageSet = next.games[0].id; order = 'number-asc';
+    illustration = scope === 'introduced' ? defaultIllustration(id) : `game:${next.games[0].id}`; imageSet = next.games[0].id; order = 'number-asc';
     if (legacy) selectedTypes = selectedTypes.filter(type => typesForGeneration(id).some(item => item.id === type));
     if (against === id) against = null;
     generation.set(id);
+  }
+
+  function changeEdition(game: string): void {
+    const era = GAME_BY_ID.get(game)!.generation;
+    if (era !== $generation) changeGeneration(era); else checkpoint();
+    edition.set(game); dex = null; selectedPokemonId = null; against = null;
+    imageSet = game;
+    illustration = scope === 'introduced' && game === generationInfo(era).games[0].id ? defaultIllustration(era) : `game:${game}`;
+  }
+  function changeScope(value: UniverseScope): void {
+    checkpoint(); scope = value; illustration = value === 'introduced' ? defaultIllustration($generation) : `game:${$edition}`; dex = null; selectedPokemonId = null; selectedSegment = null; query = ''; compareIds = []; comparisonOpen = false; against = null;
   }
 
   function toggleType(type: TypeId): void {
@@ -216,13 +236,14 @@
   async function load(id = $generation, force = false): Promise<void> {
     controller?.abort();
     const request = new AbortController(); controller = request;
-    if (dataGeneration !== id) {
-      const cached = readCache(id); pokemon = cached?.pokemon ?? []; savedAt = cached?.savedAt ?? null; dataGeneration = id;
+    const context = `${id}/${scope}/${$edition}/${dex}`;
+    if (dataContext !== context) {
+      const cached = scope === 'introduced' ? readCache(id) : null; pokemon = cached?.pokemon ?? []; savedAt = cached?.savedAt ?? null; dataContext = context;
     }
     const status = pokemon.length ? 'refreshing' : 'loading';
     loadState = { status, completed: 0 };
     try {
-      const dataset = await loadGeneration(id, request.signal, force);
+      const dataset = await loadUniverse(id, scope, $edition, dex, request.signal, force);
       if (controller !== request) return;
       pokemon = dataset.pokemon;
       savedAt = dataset.savedAt;
@@ -240,6 +261,7 @@
 
   $effect(() => {
     const id = $generation;
+    scope; dex; $edition;
     if (section === 'explore') untrack(() => { void load(id); });
     return () => { controller?.abort(); controller = null; };
   });
@@ -265,8 +287,8 @@
 
   <main id="explore-main" tabindex="-1" hidden={section !== 'explore'}>
     <section class="intro" aria-labelledby="page-title">
-      <div><p class="eyebrow">{$t('generationEyebrow', { total: definition.speciesIds.length })}</p><h1 id="page-title">{$t('regionTitle', { region: regionLabel })}</h1><p class="intro-copy">{$t('generationIntro')}</p></div>
-      <div class="generation"><span class="badge">{definition.roman}</span><div><strong>{eraLabel}</strong><small>{$t('pokemonCount', { count: definition.speciesIds.length })}</small><small class="generation-hardware" lang="en">{definition.platform} · {definition.year}</small></div></div>
+      <div><p class="eyebrow">{$t('generationEyebrow', { total: scope === 'introduced' ? definition.speciesIds.length : pokemon.length })}</p><h1 id="page-title">{$t('regionTitle', { region: regionLabel })}</h1><p class="intro-copy">{$t('generationIntro')}</p></div>
+      <div class="generation"><span class="badge">{definition.roman}</span><div><strong>{eraLabel}</strong><small>{$t('pokemonCount', { count: scope === 'introduced' ? definition.speciesIds.length : pokemon.length })}</small><small class="generation-hardware" lang="en">{definition.platform} · {definition.year}</small></div></div>
     </section>
 
     <div class="generation-controls">
@@ -278,6 +300,7 @@
       <p class="sr-only" id="view-description">{$t(legacy ? 'legacyDescription' : 'currentDescription', { generation: eraLabel })}</p>
     </div>
 
+    <GameContext {scope} {dex} onScope={changeScope} onEdition={changeEdition} onDex={value => { checkpoint(); dex = value; selectedPokemonId = null; selectedSegment = null; query = ''; compareIds = []; }}/>
     {#if loadState.status === 'refreshing'}
       <div class="alert alert-info app-notice" role="status"><span>{$t('refreshingNotice')}</span></div>
     {:else if loadState.status === 'cached'}
@@ -300,15 +323,15 @@
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (El análisis lateral desplazable necesita foco para poder recorrerlo con teclado.) -->
       <div class="explorer-analysis results" id="explorer-analysis" role={compactLayout ? 'tabpanel' : 'region'} aria-labelledby={compactLayout ? 'explorer-tab-analysis' : 'chart-title'} tabindex="0" hidden={compactLayout && activePanel !== 'analysis'}>
         <section class="overview" aria-label={$t('overview')}>
-          <div class="overview-stat"><span class="overview-value" id="total-pokemon">{pokemon.length || '—'}</span><span class="overview-label">{$t('introducedPokemon')}<small>{$t('oneSpecies')}</small></span></div>
+          <div class="overview-stat"><span class="overview-value" id="total-pokemon">{pokemon.length || '—'}</span><span class="overview-label">{$t(scope === 'introduced' ? 'introducedPokemon' : 'universeCount')}<small>{$t('oneSpecies')}</small></span></div>
           <div class="overview-stat"><span class="overview-value" id="available-types">{availableTypes.length}</span><span class="overview-label">{$t('typesToExplore')}<small>{$t(legacy ? 'originalTypes' : 'currentClassification')}</small></span></div>
           <div class="overview-stat"><span class="overview-value" id="selected-top">{selected.size}</span><span class="overview-label">{$t('selectedTypes')}<small>{$t('liveMix')}</small></span></div>
         </section>
-        <div class="image-selector"><label for="against-generation">{$t('compareGeneration')}</label><select class="select" id="against-generation" value={against ?? ''} onchange={event => { checkpoint(); against = event.currentTarget.value ? Number(event.currentTarget.value) : null; }}><option value="">{$t('noGenerationComparison')}</option>{#each GENERATIONS.filter(option => option.id !== $generation) as option (option.id)}<option value={option.id}>{localizedName(option.names, $language, option.roman)}</option>{/each}</select></div>
+        <div class="image-selector"><label for="against-generation">{$t('compareGeneration')}</label><select class="select" id="against-generation" disabled={scope !== 'introduced'} value={against ?? ''} onchange={event => { checkpoint(); against = event.currentTarget.value ? Number(event.currentTarget.value) : null; }}><option value="">{$t('noGenerationComparison')}</option>{#each GENERATIONS.filter(option => option.id !== $generation) as option (option.id)}<option value={option.id}>{localizedName(option.names, $language, option.roman)}</option>{/each}</select></div>
         <DistributionChart {analysis} {active} {legacy} {chart} onChartChange={value => { checkpoint(); chart = value; }} selectedSegment={segment?.key ?? null} onSegment={selectSegment}/>
         <aside class="explanation"><span class="tip-icon" aria-hidden="true">✧</span><p>
           {#if legacy}
-            <strong>{$t('originalExplanationTitle')}</strong> {$t('historicalExplanation', { generation: eraLabel, total: definition.speciesIds.length })}
+            <strong>{$t('originalExplanationTitle')}</strong> {$t('historicalExplanation', { generation: eraLabel, total: pokemon.length })}
           {:else}
             <strong>{$t('currentExplanationTitle')}</strong> {$t('currentExplanation', explanationValues)}
           {/if}
@@ -324,7 +347,7 @@
             </div>
           </section>
         {/if}
-        {#if against !== null && section === 'explore' && (!compactLayout || activePanel === 'analysis')}<GenerationComparison {pokemon} other={against} {selected} {view}/>{/if}
+        {#if scope === 'introduced' && against !== null && section === 'explore' && (!compactLayout || activePanel === 'analysis')}<GenerationComparison {pokemon} other={against} {selected} {view}/>{/if}
       </div>
     </div>
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
@@ -340,7 +363,7 @@
         {#if loadState.status === 'ready'}<button class="btn btn-ghost btn-xs text-button" type="button" onclick={() => load($generation, true)}>{$t('refresh')}</button>{/if}
       </div>
       {#if savedDate}<p class="cache-updated">{$t('lastLoaded')} <time datetime={savedDate.toISOString()}>{savedDate.toLocaleString(LOCALES[$language], { dateStyle: 'medium', timeStyle: 'short' })}</time></p>{/if}
-      {#if updating}<progress class="progress progress-primary connection-progress" value={loadState.completed} max={definition.speciesIds.length} aria-label={$t('loadedPokemon')}></progress>{/if}
+      {#if updating}<progress class="progress progress-primary connection-progress" value={loadState.completed} max={scope === 'introduced' ? definition.speciesIds.length : pokemon.length || 1} aria-label={$t('loadedPokemon')}></progress>{/if}
     </div>
     <span class="footer-note">{$t('footer')}<br/>{$t('originalForms', { generation: eraLabel })}</span>
   </footer>

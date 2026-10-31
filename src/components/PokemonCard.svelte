@@ -14,6 +14,7 @@
   aria-haspopup="dialog" aria-controls="pokemon-dialog" onclick={() => onOpen(pokemon)}>
   <span class="pokemon-portrait" style:--pokemon-tint={TYPE_BY_ID[types[0]].tint}><PokemonImage {pokemon} {illustration}/></span>
   <span class="pokemon-number">#{String(pokemon.id).padStart(3, '0')}</span>
+  {#if pokemon.regionalNumber !== undefined}<small class="pokemon-number">{$t('regionalNumber', { number: pokemon.regionalNumber })}</small>{/if}
   <span class="pokemon-name">{pokemonName(pokemon.name, $language)}</span>
   <span class="pokemon-types">{#each types as type (type)}<TypeBadge {type}/>{/each}</span>
   <span class="pokemon-card-hint">{$t('viewDetails')}</span>

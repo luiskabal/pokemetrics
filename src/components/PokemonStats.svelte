@@ -5,14 +5,14 @@
   import { statsForGeneration } from '../lib/stats';
   import { language, t } from '../lib/i18n';
   import { imageName, statName } from '../lib/localization';
-  import { generation } from '../lib/generation-state';
+  import { generation, edition } from '../lib/generation-state';
   import { generationInfo } from '../lib/generations';
   import { localizedName } from '../lib/localization';
 
   let { pokemon, view }: { pokemon: Pokemon; view: ViewMode } = $props();
   let localVersion = $state<GameId | 'current' | null>(null);
   let chart = $state<'radar' | 'bars'>('radar');
-  const version = $derived(localVersion ?? (view === 'legacy' ? generationInfo($generation).games[0].id : 'current'));
+  const version = $derived(localVersion ?? (view === 'legacy' ? $edition : 'current'));
   const current = $derived(version === 'current');
   const stats = $derived(statsForGeneration(pokemon, current ? 'current' : $generation));
   const summary = $derived(stats?.map(stat => `${statName(stat.id, $language)}: ${stat.value}`).join('. ') ?? '');

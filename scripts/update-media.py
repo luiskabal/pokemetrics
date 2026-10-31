@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 from io import BytesIO
 import json
+import re
 from pathlib import Path
 import tempfile
 from urllib.error import HTTPError
@@ -31,6 +32,9 @@ for path in args.data_dir.glob("generation-*.json"):
                     ("/official-artwork/" in url or url.endswith((".webp", ".gif"))))
 if not urls:
     raise SystemExit("No image sources found; keeping the existing catalog.")
+for path in args.data_dir.glob("media-*.json"):
+    for games in json.loads(path.read_text(encoding="utf-8"))["images"].values():
+        urls.update(url for sprite in games.values() for url in sprite.values() if url and url.startswith(PREFIX) and url.endswith((".webp", ".gif")))
 
 cache = Path(tempfile.gettempdir()) / "pokemetrics-media-cache-v1"
 cache.mkdir(exist_ok=True)
@@ -71,4 +75,13 @@ with ThreadPoolExecutor(max_workers=4) as pool:
             print(f"Previews: {index}/{len(urls)}", flush=True)
 # A failed download never replaces the last complete manifest.
 catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+groups = {}
+for key, entry in catalog.items():
+    match = re.match(r"^versions/(generation-[a-z]+)/([a-z0-9-]+)/", key)
+    group = "-".join(match.groups()) if match else "artwork"
+    groups.setdefault(group, {})[key] = entry
+group_directory = ROOT / "public/media/catalogs"
+group_directory.mkdir(exist_ok=True)
+for group, entries in groups.items():
+    (group_directory / (group + ".json")).write_text(json.dumps(entries, separators=(",", ":")) + "\n", encoding="utf-8")
 print(f"Prepared {len(catalog)} sources, {sum(entry.get('animated', False) for entry in catalog.values())} animations.")

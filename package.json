@@ -15,7 +15,8 @@
     "update:data": "node scripts/update-data.mjs",
     "update:media": "python scripts/update-media.py",
     "update:types": "node scripts/update-types.mjs",
-    "update:move-names": "node scripts/update-move-names.mjs"
+    "update:move-names": "node scripts/update-move-names.mjs",
+    "update:dexes": "node scripts/update-dexes.mjs"
   },
   "dependencies": { "svelte": "5.57.3" },
   "devDependencies": {

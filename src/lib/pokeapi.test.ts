@@ -146,6 +146,7 @@ describe('normalización de PokéAPI', () => {
     expect(entry.historicalArtworks).toEqual({
       'red-and-blue': 'https://example.com/illustrations/red-blue.png',
       'red-and-green': 'https://example.com/illustrations/red-green.png',
+      'gold-and-silver': null,
     });
     expect(entry.image).toBe('https://example.com/artwork.png');
     expect(entry.gameSprites['red-blue'].front).toBe('https://example.com/red-blue/front.png');
@@ -154,7 +155,7 @@ describe('normalización de PokéAPI', () => {
   it('admite ilustraciones históricas ausentes y conserva la compatibilidad con la caché v5', () => {
     const raw = rawPokemon();
     const entry = normalizePokemon({ ...raw, sprites: { ...raw.sprites, other: { 'official-artwork': { front_default: raw.sprites.other['official-artwork'].front_default } } } });
-    expect(entry.historicalArtworks).toEqual({ 'red-and-blue': null, 'red-and-green': null });
+    expect(entry.historicalArtworks).toEqual({ 'red-and-blue': null, 'red-and-green': null, 'gold-and-silver': null });
     const oldPokemon = dataset().map(({ historicalArtworks, ...pokemon }) => pokemon);
     expect(isPokemonDataset(oldPokemon)).toBe(true);
     const savedAt = 1_700_000_000_000;

@@ -8,6 +8,8 @@ export interface Pokemon {
   name: string;
   types: TypeId[];
   legacyTypes: TypeId[];
+  typeHistory?: { generation: number; types: TypeId[] }[];
+  regionalNumber?: number;
   image: string | null;
   sprite: string | null;
   gameSprites: Record<GameId, { front: string | null; back: string | null }>;

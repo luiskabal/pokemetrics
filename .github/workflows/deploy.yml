@@ -37,6 +37,8 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       - run: npm run update:types
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      - run: npm run update:dexes
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       - run: npm run update:move-names
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       - run: npm run check

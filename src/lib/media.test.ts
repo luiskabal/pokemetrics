@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { mediaSource } from './media';
+import { beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { mediaSource, loadMediaCatalog } from './media';
+beforeAll(async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(readFileSync(new URL('./media-data.json', import.meta.url), 'utf8'))));
+  await loadMediaCatalog('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-ix/scarlet-violet/906.webp');
+});
+afterAll(() => vi.unstubAllGlobals());
 
 describe('previews of the selected artwork', () => {
   it('uses static previews of the same game and preserves front/back separation', () => {

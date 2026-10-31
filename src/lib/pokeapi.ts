@@ -1,7 +1,7 @@
 import { GEN_I_STATS, STATS, TYPE_BY_ID } from './metadata';
 import type { TypeId } from './metadata';
 import type { Pokemon } from './model';
-import { generationInfo, typesForGeneration } from './generations';
+import { GENERATIONS, generationInfo, typesForGeneration } from './generations';
 
 export const CACHE_KEY = 'pokemetrics-kanto-v5';
 const API = 'https://pokeapi.co/api/v2/';
@@ -15,7 +15,7 @@ const validGameSprites = (value: unknown, generation: number): value is Pokemon[
   const sprites = value[game.id];
   return record(sprites) && imageUrl(sprites.front) && imageUrl(sprites.back);
 });
-const validHistoricalArtworks = (value: unknown, generation: number) => value === undefined || (record(value) && generationInfo(generation).artworks.every(id => imageUrl(value[id])));
+const validHistoricalArtworks = (value: unknown, generation: number) => value === undefined || (record(value) && generationInfo(generation).artworks.every(id => imageUrl(value[id])) && Object.values(value).every(imageUrl));
 const historicalStatIds = new Set<string>([...STATS, ...GEN_I_STATS].map(stat => stat.id));
 const validPastStats = (value: unknown) => value === undefined || (Array.isArray(value) && value.every(history =>
   record(history) && positiveInteger(history.generation) && Array.isArray(history.stats) && history.stats.length > 0 &&
@@ -27,6 +27,7 @@ function isPokemon(entry: unknown, generation = 1): entry is Pokemon {
     if (!record(entry) || !positiveInteger(entry.id) || !generationInfo(generation).speciesIds.includes(entry.id) ||
       typeof entry.name !== 'string' || !entry.name.length ||
       !validTypes(entry.types) || !validTypes(entry.legacyTypes) || !entry.legacyTypes.every(id => typesForGeneration(generation).some(type => type.id === id)) ||
+      (entry.typeHistory !== undefined && (!Array.isArray(entry.typeHistory) || !entry.typeHistory.every(row => record(row) && positiveInteger(row.generation) && validTypes(row.types)))) ||
       !imageUrl(entry.image) || !imageUrl(entry.sprite) || !validGameSprites(entry.gameSprites, generation) || !validHistoricalArtworks(entry.historicalArtworks, generation) ||
       !positiveInteger(entry.height) || !positiveInteger(entry.weight) ||
       !Array.isArray(entry.stats) || entry.stats.length !== STATS.length ||
@@ -69,11 +70,11 @@ export function normalizePokemon(value: unknown, generationId = 1): Pokemon {
   const artwork = record(other) ? other['official-artwork'] : undefined;
   const artworkVersions = record(artwork) ? artwork.versions : undefined;
   const definition = generationInfo(generationId);
-  const generationArtwork = record(artworkVersions) ? artworkVersions[definition.slug] : undefined;
-  const historicalArtworks = Object.fromEntries(definition.artworks.map(id => {
-    const image = record(generationArtwork) ? generationArtwork[id] : undefined;
+  const historicalArtworks = Object.fromEntries(GENERATIONS.flatMap(era => era.artworks.map(id => {
+    const art = record(artworkVersions) ? artworkVersions[era.slug] : undefined;
+    const image = record(art) ? art[id] : undefined;
     return [id, record(image) ? image.front_default ?? null : null];
-  }));
+  })));
   const versions = value.sprites.versions;
   const generation = record(versions) ? versions[definition.slug] : undefined;
   const gameSprites = Object.fromEntries(definition.games.map(game => {
@@ -85,6 +86,7 @@ export function normalizePokemon(value: unknown, generationId = 1): Pokemon {
   }));
   const entry = {
     id: value.id, name: record(value.species) ? value.species.name : value.name, types, legacyTypes: originalTypes,
+    typeHistory: value.past_types.map(row => ({ generation: resourceId(row.generation.url), types: readTypes(row.types) })),
     image: record(artwork) ? artwork.front_default ?? null : null,
     sprite: value.sprites.front_default ?? null,
     gameSprites,
@@ -169,7 +171,7 @@ export async function loadGeneration(generation: number, signal: AbortSignal, fo
   signal.throwIfAborted();
   const cached = readCache(generation);
   const age = cached ? Date.now() - cached.checkedAt : Infinity;
-  if (!force && cached && age >= 0 && age < 86_400_000) return cached;
+  if (!force && cached && cached.pokemon.every(pokemon => pokemon.typeHistory !== undefined) && age >= 0 && age < 86_400_000) return cached;
   const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(20_000)]);
   const response = await fetch(`${import.meta.env.BASE_URL}data/generation-${generation}.json`, { signal: requestSignal, cache: 'no-cache' });
   if (!response.ok) throw Error(`Generation data HTTP ${response.status}`);

@@ -8,8 +8,15 @@ try {
   const { generations } = JSON.parse(await readFile(new URL('../src/lib/generation-data.json', import.meta.url), 'utf8'));
   const datasets = [];
   const learnsets = [];
+  const media = Object.fromEntries(generations.map(era => [era.id, { schemaVersion: 1, generation: era.id, savedAt: Date.now(), images: {} }]));
   for (const generation of generations) {
-    const pokemon = await fetchGeneration(generation.id, AbortSignal.timeout(90_000), () => {}, raw => learnsets.push(normalizeLearnset(raw)));
+    const pokemon = await fetchGeneration(generation.id, AbortSignal.timeout(90_000), () => {}, raw => {
+      learnsets.push(normalizeLearnset(raw));
+      for (const era of generations.filter(era => era.id >= generation.id)) {
+        const sprites = raw.sprites.versions[era.slug] ?? {};
+        media[era.id].images[raw.id] = Object.fromEntries(era.games.map(game => [game.id, { front: sprites[game.spriteKey]?.front_default ?? null, back: sprites[game.spriteKey]?.back_default ?? null }]));
+      }
+    });
     datasets.push(parseGenerationDataset({ schemaVersion: 1, generation: generation.id, pokemon, savedAt: Date.now() }, generation.id));
     console.log(`Generation ${generation.id}: ${pokemon.length} species validated`);
   }
@@ -25,4 +32,5 @@ try {
   const movesDirectory = new URL('moves/', output);
   await mkdir(movesDirectory, { recursive: true });
   for (const moves of learnsets) await writeFile(new URL(`${moves.id}.json`, movesDirectory), JSON.stringify(moves) + '\n');
+  for (const value of Object.values(media)) await writeFile(new URL(`media-${value.generation}.json`, output), JSON.stringify(value) + '\n');
 } finally { await server.close(); }
