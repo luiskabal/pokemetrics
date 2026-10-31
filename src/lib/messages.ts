@@ -1,4 +1,12 @@
 export const MESSAGES = {
+  manualSlots: ['Guardados manuales', 'Manual save slots', '手動セーブ'],
+  slotsHelp: ['Tres espacios por archivo de ROM, además del autoguardado. Guardar y cargar pausa el juego. El respaldo descargable conserva el estado actual; las miniaturas se guardan en este navegador.', 'Three slots per ROM file, in addition to autosave. Saving and loading pauses the game. Downloaded backups contain the current state; thumbnails stay in this browser.', 'ROMファイルごとに自動セーブと別に3枠あります。保存・読込で一時停止します。バックアップは現在の状態を含み、画像はこのブラウザーに保存されます。'],
+  slotName: ['Espacio {number}', 'Slot {number}', 'スロット{number}'],
+  slotEmpty: ['Sin guardado', 'Empty slot', '空きスロット'],
+  slotScreenshot: ['Miniatura del espacio {number}', 'Slot {number} thumbnail', 'スロット{number}の画像'],
+  slotLoad: ['Cargar', 'Load', '読み込む'],
+  slotOverwrite: ['¿Reemplazar este guardado manual?', 'Replace this manual save?', 'この手動セーブを上書きしますか？'],
+  slotRestore: ['¿Cargar este espacio y reemplazar el estado actual? El juego quedará en pausa.', 'Load this slot and replace the current state? The game will remain paused.', '現在の状態を置き換えて読み込みますか？ゲームは一時停止します。'],
   captureState: ['Estado de captura', 'Capture status', '登録状態'],
   captureTitle: ['Mi progreso', 'My progress', '図鑑の進捗'],
   pending: ['Pendiente', 'Pending', '未発見'],

@@ -607,3 +607,14 @@ html[data-ui-theme] .explorer-analysis .overview { padding: 14px; }
 .capture-status select { width: 100%; min-height: 30px; height: 30px; font-size: 12px; padding: 4px 24px 4px 8px; }
 .capture-filter { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; }
 .capture-filter select { flex: 1; min-width: 0; }
+
+.game-slots { padding: 16px; margin-top: 16px; }
+.game-slots summary { cursor: pointer; font-weight: 750; }
+.slot-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.game-slot { min-width: 0; display: grid; gap: 8px; align-content: start; }
+.game-slot img, .slot-placeholder { width: 100%; aspect-ratio: 160/144; height: auto; object-fit: contain; background: #101c1a; border-radius: 8px; image-rendering: pixelated; }
+.slot-placeholder { display: grid; place-items: center; color: #d0dfbf; font-size: 12px; }
+.game-slot label { display: grid; gap: 5px; font-size: 12px; }
+.game-slot input { width: 100%; }
+.game-slot time { font-size: 11px; }
+@media(max-width: 600px) { .slot-grid { grid-template-columns: 1fr; } .game-slot img, .slot-placeholder { max-height: 144px; } }

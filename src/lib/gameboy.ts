@@ -50,4 +50,4 @@ export async function readGameBackup(text: string, romHash: string): Promise<Gam
 
 export const GAME_CHANNEL = 'pokemetrics-game-v1';
 export type PlayerCommand = 'pause' | 'resume' | 'save' | 'export' | 'restart';
-export interface PlayerMessage { channel: typeof GAME_CHANNEL; session: string; type: string; requestId?: number; ok?: boolean; state?: Uint8Array; savedAt?: number }
+export interface PlayerMessage { channel: typeof GAME_CHANNEL; session: string; type: string; requestId?: number; ok?: boolean; state?: Uint8Array; savedAt?: number; thumbnail?: string | null }

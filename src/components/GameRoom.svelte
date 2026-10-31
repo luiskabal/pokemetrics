@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { loadGameSlots, saveGameSlot } from '../lib/game-storage';
+  import type { GameSlot } from '../lib/game-storage';
   import { onMount } from 'svelte';
   import { GAME_CHANNEL, MAX_STATE_BYTES, SAVE_ENGINE, exportGameBackup, readGameBackup, readGameRom } from '../lib/gameboy';
   import type { GameRom, PlayerCommand, PlayerMessage } from '../lib/gameboy';
@@ -16,6 +18,17 @@
   let busy = $state(false);
   let error = $state<MessageKey | null>(null);
   let storageFailed = $state(false);
+  let slots = $state<GameSlot[]>([]);
+  let slotNames = $state(['', '', '']);
+  async function saveSlot(slot: number) {
+    if (slots.some(saved => saved.slot === slot) && !confirm($t('slotOverwrite'))) return;
+    busy = true; error = null; send('pause');
+    try { const result = await command('export', { thumbnail: true }); if (!result.ok || !result.state || !rom) throw Error('playOperationError'); const snapshot: GameSlot = { romHash: rom.hash, engine: SAVE_ENGINE, state: result.state, savedAt: result.savedAt!, slot, name: slotNames[slot-1].trim() || $t('slotName', { number: slot }), thumbnail: result.thumbnail ?? null }; await saveGameSlot(snapshot); slots = [...slots.filter(saved => saved.slot !== slot), snapshot]; storageFailed = false; } catch (value) { showError(value); } finally { busy = false; }
+  }
+  async function loadSlot(slot: GameSlot) {
+    if (!confirm($t('slotRestore'))) return; busy = true; error = null;
+    try { const result = await command('restore', { state: slot.state }); if (!result.ok) storageFailed = true; } catch (value) { showError(value); } finally { busy = false; }
+  }
   let savedAt = $state<number | null>(null);
   let volume = $state(.5);
   let frame = $state<HTMLIFrameElement>();
@@ -51,7 +64,7 @@
         const saved = await command('save');
         if (!saved.ok && !confirm($t('playSwitchWarning'))) return;
       }
-      rom = next; started = false; storageFailed = false; savedAt = null; phase = 'loading'; session = crypto.randomUUID();
+      storageFailed = false; rom = next; slots = []; slotNames = ['', '', '']; try { slots = await loadGameSlots(next.hash); for (const slot of slots) slotNames[slot.slot-1] = slot.name; } catch { storageFailed = true; } started = false; savedAt = null; phase = 'loading'; session = crypto.randomUUID();
       clearTimeout(watchdog);
       watchdog = setTimeout(() => { if (phase === 'loading') { phase = 'error'; error = 'playLoadError'; } }, 45_000);
     } catch (value) { showError(value); }
@@ -143,6 +156,7 @@
     </div>
     <p class="play-status" role="status">{$t(phase === 'loading' ? 'playLoading' : phase === 'ready' ? 'playReady' : phase === 'paused' ? 'playPaused' : phase === 'playing' ? 'playRunning' : 'playLoadError')}{#if savedAt} · {$t('playLastSave')} <time datetime={new Date(savedAt).toISOString()}>{new Date(savedAt).toLocaleString(LOCALES[$language])}</time>{/if}</p>
   {:else}<div class="play-empty"><div class="play-console" aria-hidden="true"><span>GAME BOY</span><svg viewBox="0 0 160 144" fill="none" stroke="currentColor" stroke-width="3"><path d="M50 45h60v54H50zM58 53h44v30H58zM61 91h9m20 0h5"/><path d="M30 72h12m76 0h12"/></svg><small>● ●</small></div><p>{$t('playEmpty')}</p></div>{/if}
+  {#if rom}<details class="game-slots card"><summary>{$t('manualSlots')}</summary><p class="stat-note">{$t('slotsHelp')}</p><div class="slot-grid">{#each [1, 2, 3] as number}{@const slot = slots.find(slot => slot.slot === number)}<article class="game-slot" data-slot={number}>{#if slot?.thumbnail}<img src={slot.thumbnail} alt={$t('slotScreenshot', { number })} width="160" height="144"/>{:else}<div class="slot-placeholder">{$t('slotEmpty')}</div>{/if}<label>{$t('slotName', { number })}<input class="input" maxlength="64" bind:value={slotNames[number-1]} placeholder={$t('slotName', { number })}/></label>{#if slot}<time datetime={new Date(slot.savedAt).toISOString()}>{new Date(slot.savedAt).toLocaleString(LOCALES[$language])}</time>{/if}<div class="list-actions"><button class="btn btn-sm" data-save-slot={number} disabled={!started || busy} onclick={() => saveSlot(number)}>{$t('playSave')}</button><button class="btn btn-sm" data-load-slot={number} disabled={!started || busy || !slot} onclick={() => loadSlot(slot!)}>{$t('slotLoad')}</button></div></article>{/each}</div></details>{/if}
   </div><details class="play-companion card" bind:open={companionOpen} ontoggle={event => { if (event.currentTarget.open && matchMedia('(max-width: 899px)').matches) send('pause'); }}><summary>{$t('companionTitle')}</summary>{#if companionOpen}{#await import('./PlayCompanion.svelte')}<p role="status">{$t('infoLoading')}</p>{:then module}<module.default {onEdition} onInspect={inspect}/>{:catch}<p role="status">{$t('infoError')}</p>{/await}{/if}</details></div>
   <div class="play-help"><h2>{$t('playControls')}</h2><p>{$t('playKeyboard')}</p><p>{$t('playSaveHelp')}</p><p>{$t('playLanguageHelp')}</p><p>{$t('playPrivacy')}</p><a href={`${import.meta.env.BASE_URL}emulator/licenses.html`} target="_blank" rel="noopener noreferrer">{$t('playLicenses')} ↗</a></div>
 </section>

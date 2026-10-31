@@ -7,7 +7,7 @@ import { loadGameSnapshot, saveGameSnapshot } from './lib/game-storage';
 interface Emulator {
   started: boolean; paused: boolean; failedToStart: boolean; pause(): void; play(): void; setVolume(value: number): void;
   on(event: string, callback: () => void): void;
-  gameManager: { restart(): void; getState(): Uint8Array; getFrameNum(): number; loadState(state: Uint8Array): void; saveSaveFiles(): void; functions: { simulateInput(player: number, button: number, value: number): void }; FS: { syncfs(populate: boolean, callback: (error: unknown) => void): void } };
+  gameManager: { restart(): void; getState(): Uint8Array; getFrameNum(): number; loadState(state: Uint8Array): void; saveSaveFiles(): void; functions: { screenshot(): void; simulateInput(player: number, button: number, value: number): void }; FS: { readFile(path: string): Uint8Array; unlink(path: string): void; syncfs(populate: boolean, callback: (error: unknown) => void): void } };
 }
 const runtime = window as unknown as Record<string, unknown> & { EJS_emulator?: Emulator };
 const origin = location.origin;
@@ -19,6 +19,21 @@ let restoredState: { state: Uint8Array; frame: number } | null = null;
 let saveQueue: Promise<unknown> = Promise.resolve();
 const status = document.getElementById('status')!;
 const send = (type: string, values: Partial<PlayerMessage> = {}) => parent.postMessage({ channel: GAME_CHANNEL, session, type, ...values }, origin);
+
+async function thumbnail(state: Uint8Array): Promise<string | null> {
+  const emulator = runtime.EJS_emulator!; const manager = emulator.gameManager;
+  pause();
+  try {
+    try { manager.FS.unlink('/screenshot.png'); } catch { /* La primera captura aún no existe. */ }
+    manager.functions.screenshot(); emulator.play();
+    let bytes: Uint8Array | null = null; const deadline = performance.now() + 2000;
+    while (!bytes && performance.now() < deadline) { try { bytes = manager.FS.readFile('/screenshot.png'); } catch { await new Promise(resolve => setTimeout(resolve, 20)); } }
+    pause(); restoreState(state);
+    if (!bytes) return null;
+    const bitmap = await createImageBitmap(new Blob([new Uint8Array(bytes).buffer], { type: 'image/png' })); const canvas = document.createElement('canvas'); canvas.width = 160; canvas.height = 144;
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, 160, 144); bitmap.close(); return canvas.toDataURL('image/png');
+  } catch { pause(); restoreState(state); return null; }
+}
 
 function restoreState(state: Uint8Array) {
   const manager = runtime.EJS_emulator!.gameManager;
@@ -120,7 +135,7 @@ addEventListener('message', async event => {
     else if (data.type === 'resume' && active) { emulator.play(); send('playing'); }
     else if (data.type === 'volume' && Number.isFinite(data.volume)) emulator.setVolume(Math.max(0, Math.min(1, data.volume)));
     else if (data.type === 'save') { const ok = await checkpoint(); send('response', { requestId: data.requestId, ok }); }
-    else if (data.type === 'export') send('response', { requestId: data.requestId, ok: true, state: currentState(), savedAt: Date.now() });
+    else if (data.type === 'export') { const state = currentState(); send('response', { requestId: data.requestId, ok: true, state, savedAt: Date.now(), thumbnail: data.thumbnail ? await thumbnail(state) : null }); }
     else if (data.type === 'restore' && data.state instanceof Uint8Array) { pause(); restoreState(data.state); const ok = await checkpoint(); send('response', { requestId: data.requestId, ok }); }
     else if (data.type === 'restart') { pause(); restoredState = null; emulator.gameManager.restart(); send('paused'); }
   } catch { send('error'); if (Number.isInteger(data.requestId)) send('response', { requestId: data.requestId, ok: false }); }
