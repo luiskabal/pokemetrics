@@ -1,4 +1,7 @@
 export const MESSAGES = {
+  shownPokemon: ['Mostrando {shown} de {total}', 'Showing {shown} of {total}', '{total}匹中{shown}匹を表示'],
+  showMorePokemon: ['Mostrar {count} más', 'Show {count} more', 'さらに{count}匹を表示'],
+  listChunkHelp: ['La búsqueda, el orden y el CSV se aplican a todos los resultados.', 'Search, sorting and CSV use all results.', '検索・並べ替え・CSVにはすべての結果を使用します。'],
   playAnimation: ['Reproducir animación', 'Play animation', 'アニメーションを再生'],
   stopAnimation: ['Detener animación', 'Stop animation', 'アニメーションを停止'],
   animationReducedMotion: ['Las animaciones están desactivadas por tu preferencia de movimiento reducido.', 'Animations are disabled by your reduced motion preference.', '動きを減らす設定によりアニメーションは無効です。'],

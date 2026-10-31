@@ -66,6 +66,8 @@ La página prioriza el listado: desde 1.200 px muestra filtros a la izquierda, P
 
 ## Publicación
 
+El listado comienza con 24 tarjetas y **Mostrar más** añade otras 24. Búsqueda, orden, filtros y CSV trabajan sobre todos los resultados; los gráficos conservan el total completo de la generación. Un cambio en los IDs u orden de los resultados reinicia el bloque; una actualización con los mismos IDs conserva lo mostrado. Cargar más enfoca la primera tarjeta nueva y cerrar una ficha mantiene el bloque actual.
+
 Las tarjetas y las fichas muestran versiones estáticas del mismo arte seleccionado. **Reproducir animación**, en la ficha, descarga el original; detenerla o desplazarla fuera de pantalla vuelve a la imagen estática. Movimiento reducido desactiva la reproducción, tanto GIF como WebP. La galería carga solo la ilustración elegida y los sprites de frente/espalda se montan al desplegar su apartado. Las miniaturas tienen tamaños de 160, 320 y 640 px, sin ampliar el original; un fallo no provoca la descarga automática de una animación pesada ni cambia de juego.
 
 Para regenerar las miniaturas, instala `python -m pip install -r scripts/requirements-media.txt` y ejecuta `python scripts/update-media.py`. Lee los datos de `public/data/`, genera `public/media/pokemon/` y actualiza `src/lib/media-data.json` solo al completar la preparación. Reutiliza las versiones existentes; `--refresh` vuelve a consultar sus fuentes. Los originales se guardan temporalmente fuera del repositorio. Pillow se utiliza únicamente al preparar recursos; la página publicada sigue siendo estática.

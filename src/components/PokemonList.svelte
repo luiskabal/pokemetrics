@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import type { Pokemon, PokemonOrder, ViewMode } from '../lib/model';
   import { GEN_I_STATS, STATS } from '../lib/metadata';
   import type { IllustrationId } from '../lib/metadata';
@@ -12,6 +13,10 @@
   let { pokemon, results, view, illustration, hasSelection, onOpen, onShowFilters, query = $bindable(''), order = $bindable<PokemonOrder>('number-asc'), onOrderChange, segmentLabel, onClearSegment, compareIds, onCompare, favorites, onlyFavorites, onFavorite, onOnlyFavorites }: { pokemon: Pokemon[]; results: Pokemon[]; view: ViewMode; illustration: IllustrationId; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; onShowFilters: () => void; query?: string; order?: PokemonOrder; onOrderChange: () => void; segmentLabel: string | null; onClearSegment: () => void; compareIds: number[]; onCompare: (id: number) => void; favorites: ReadonlySet<number>; onlyFavorites: boolean; onFavorite: (id: number) => void; onOnlyFavorites: () => void } = $props();
   let searchInput: HTMLInputElement;
   let exportStatus = $state<'exportReady' | 'exportError' | null>(null);
+  let visibleLimit = $state(24);
+  const resultIds = $derived(results.map(pokemon => pokemon.id).join(','));
+  const visibleResults = $derived(results.slice(0, visibleLimit));
+  $effect.pre(() => { resultIds; visibleLimit = 24; });
   const statOptions = $derived(view === 'legacy' && $generation === 1 ? GEN_I_STATS : STATS);
   $effect(() => {
     const field = order.slice(0, order.lastIndexOf('-'));
@@ -22,6 +27,14 @@
       downloadFile(new Blob([pokemonCsv(results, { generation: $generation, view, language: $language })], { type: 'text/csv;charset=utf-8' }), `pokemetrics-gen-${$generation}-${view}.csv`);
       exportStatus = 'exportReady';
     } catch { exportStatus = 'exportError'; }
+  }
+  async function showMore() {
+    const firstNewId = results[visibleLimit].id;
+    visibleLimit += 24;
+    await tick();
+    const card = document.querySelector<HTMLButtonElement>(`.pokemon-card[data-id="${firstNewId}"]`)!;
+    card.focus({ preventScroll: true });
+    card.scrollIntoView({ block: 'nearest', behavior: 'instant' });
   }
 </script>
 
@@ -62,8 +75,9 @@
   {#if illustration !== 'current' && pokemon.some(entry => entry.historicalArtworks === undefined)}<p class="list-help">{$t('historicalPending')}</p>{/if}
   {#if results.length}
     <ul class="pokemon-grid" id="pokemon-grid" aria-labelledby="pokemon-title">
-      {#each results as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/><div class="card-actions"><button class="btn btn-sm" type="button" data-compare={entry.id} aria-pressed={compareIds.includes(entry.id)} disabled={compareIds.length === 4 && !compareIds.includes(entry.id)} onclick={() => onCompare(entry.id)}>{$t(compareIds.includes(entry.id) ? 'inComparison' : 'compare')}</button><FavoriteButton pokemon={entry} active={favorites.has(entry.id)} onToggle={onFavorite}/></div></li>{/each}
+      {#each visibleResults as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/><div class="card-actions"><button class="btn btn-sm" type="button" data-compare={entry.id} aria-pressed={compareIds.includes(entry.id)} disabled={compareIds.length === 4 && !compareIds.includes(entry.id)} onclick={() => onCompare(entry.id)}>{$t(compareIds.includes(entry.id) ? 'inComparison' : 'compare')}</button><FavoriteButton pokemon={entry} active={favorites.has(entry.id)} onToggle={onFavorite}/></div></li>{/each}
     </ul>
+    <div class="list-pagination"><p role="status">{$t('shownPokemon', { shown: visibleResults.length, total: results.length })}</p>{#if visibleResults.length < results.length}<button class="btn btn-sm" id="show-more-pokemon" type="button" aria-controls="pokemon-grid" onclick={showMore}>{$t('showMorePokemon', { count: Math.min(24, results.length - visibleResults.length) })}</button>{/if}<p class="list-help">{$t('listChunkHelp')}</p></div>
   {:else}
     <div class="pokemon-empty" id="pokemon-empty"><strong>{$t(hasSelection ? 'noMatches' : 'emptyList')}</strong><p>{$t(hasSelection ? query.trim() ? 'searchAgain' : 'typesAgain' : 'selectToDiscover')}</p><button class="btn btn-sm" type="button" onclick={onShowFilters}>{$t('showFilters')}</button></div>
   {/if}
