@@ -1,4 +1,7 @@
 export const MESSAGES = {
+  playAnimation: ['Reproducir animación', 'Play animation', 'アニメーションを再生'],
+  stopAnimation: ['Detener animación', 'Stop animation', 'アニメーションを停止'],
+  animationReducedMotion: ['Las animaciones están desactivadas por tu preferencia de movimiento reducido.', 'Animations are disabled by your reduced motion preference.', '動きを減らす設定によりアニメーションは無効です。'],
   appSections: ['Secciones de Pokémetrics', 'Pokémetrics sections', 'Pokémetricsのセクション'],
   appExplore: ['Explorar', 'Explore', '図鑑'],
   appPlay: ['Jugar', 'Play', '遊ぶ'],

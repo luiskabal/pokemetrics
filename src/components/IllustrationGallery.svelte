@@ -17,9 +17,7 @@
   <div class="section-heading"><h3 id="illustration-title">{$t('officialIllustrations')}</h3>{#if current.url}<a class="text-button" href={current.url} target="_blank" rel="noopener noreferrer">{$t('viewImage')}</a>{/if}</div>
   <p class="image-scope-note">{$t('compareHelp')}</p>
   <div class="illustration-stage" id="illustration-stage">
-    {#each illustrations as image (image.id)}
-      <div hidden={current.id !== image.id}><PokemonImage {pokemon} illustration={image.id} eager/></div>
-    {/each}
+    {#key current.id}<PokemonImage {pokemon} illustration={current.id} eager detail allowAnimation/>{/key}
   </div>
   <div class="illustration-options" role="group" aria-label={$t('chooseIllustration')}>
     {#each illustrations as image (image.id)}
