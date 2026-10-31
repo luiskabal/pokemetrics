@@ -120,7 +120,7 @@ export const MESSAGES = {
   refreshingNotice: ['Puedes explorar los datos disponibles mientras se actualizan en segundo plano.', 'You can explore the available data while it refreshes in the background.', 'バックグラウンドで更新中も、取得済みのデータを利用できます。'],
   retry: ['Reintentar', 'Retry', '再試行'],
   refresh: ['Actualizar', 'Refresh', '更新'],
-  lastLoaded: ['Última carga:', 'Last loaded:', '最終読み込み：'],
+  lastLoaded: ['Datos actualizados:', 'Data updated:', 'データ更新日時：'],
   loadedPokemon: ['Pokémon cargados', 'Pokémon loaded', '読み込み済みのポケモン'],
   overview: ['Resumen de la generación', 'Generation overview', '世代の概要'],
   kantoPokemon: ['Pokémon en Kanto', 'Pokémon in Kanto', 'カントーのポケモン'],

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CACHE_KEY, fetchKanto, isPokemonDataset, normalizePokemon, readCache, writeCache } from './pokeapi';
+import { readFileSync } from 'node:fs';
+import { CACHE_KEY, fetchKanto, isPokemonDataset, loadGeneration, normalizePokemon, parseGenerationDataset, readCache, writeCache } from './pokeapi';
 import { STATS } from './metadata';
+import { GENERATIONS } from './generations';
 
 function rawPokemon(id = 1) {
   return {
@@ -29,6 +31,68 @@ function rawPokemon(id = 1) {
 
 const dataset = () => Array.from({ length: 151 }, (_, index) => normalizePokemon(rawPokemon(index + 1)));
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+describe('compact generation datasets', () => {
+  const snapshot = () => ({ schemaVersion: 1, generation: 1, savedAt: 1_700_000_000_000, pokemon: dataset() });
+  it('validates all nine published datasets and their complete 1025 species', () => {
+    let count = 0;
+    for (const generation of GENERATIONS) {
+      const raw = JSON.parse(readFileSync(new URL(`../../public/data/generation-${generation.id}.json`, import.meta.url), 'utf8'));
+      const data = parseGenerationDataset(raw, generation.id);
+      expect(data.pokemon.map(pokemon => pokemon.id)).toEqual(generation.speciesIds);
+      expect(data.pokemon.every(pokemon => Array.isArray(pokemon.pastStats))).toBe(true);
+      count += data.pokemon.length;
+    }
+    expect(count).toBe(1025);
+  });
+  it('fetches one compact file and preserves its source date', async () => {
+    const data = snapshot(); const setItem = vi.fn();
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(data))));
+    expect(await loadGeneration(1, new AbortController().signal)).toEqual(data);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/data\/generation-1\.json$/), expect.objectContaining({ cache: 'no-cache' }));
+    const stored = JSON.parse(setItem.mock.calls[0][1]);
+    expect(stored.savedAt).toBe(data.savedAt); expect(stored.checkedAt).toBeGreaterThan(data.savedAt);
+  });
+  it('reuses a recently checked cache without changing its age, and supports a forced refresh', async () => {
+    const data = snapshot(); const setItem = vi.fn(); const checkedAt = Date.now() - 1000;
+    vi.stubGlobal('localStorage', { getItem: () => JSON.stringify({ ...data, checkedAt }), setItem });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(data))));
+    expect((await loadGeneration(1, new AbortController().signal)).savedAt).toBe(data.savedAt);
+    expect(fetch).not.toHaveBeenCalled(); expect(setItem).not.toHaveBeenCalled();
+    await loadGeneration(1, new AbortController().signal, true);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it('revalidates expired and older caches without checkedAt', async () => {
+    for (const checkedAt of [undefined, Date.now() - 86_400_001]) {
+      const data = snapshot();
+      vi.stubGlobal('localStorage', { getItem: () => JSON.stringify({ ...data, checkedAt }), setItem: vi.fn() });
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(data))));
+      await loadGeneration(1, new AbortController().signal);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    }
+  });
+  it('rejects incomplete or mismatched files without overwriting a valid cache or querying REST', async () => {
+    const data = snapshot(); const setItem = vi.fn();
+    vi.stubGlobal('localStorage', { getItem: () => JSON.stringify(data), setItem });
+    for (const invalid of [{ ...data, generation: 2 }, { ...data, schemaVersion: 2 }, { ...data, savedAt: 1e20 }, { ...data, pokemon: data.pokemon.slice(1) }]) {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(invalid))));
+      await expect(loadGeneration(1, new AbortController().signal)).rejects.toThrow('Invalid generation');
+      expect(fetch).toHaveBeenCalledTimes(1); expect(setItem).not.toHaveBeenCalled();
+    }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 503 })));
+    await expect(loadGeneration(1, new AbortController().signal)).rejects.toThrow('HTTP 503');
+    expect(setItem).not.toHaveBeenCalled();
+  });
+  it('does not write a result after the request is cancelled', async () => {
+    const controller = new AbortController(); const setItem = vi.fn(); const data = snapshot();
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem });
+    vi.stubGlobal('fetch', vi.fn(async () => { controller.abort(); return new Response(JSON.stringify(data)); }));
+    await expect(loadGeneration(1, controller.signal)).rejects.toThrow();
+    expect(setItem).not.toHaveBeenCalled();
+  });
+});
 
 describe('normalización de PokéAPI', () => {
   it('ordena por slot, conserva las imágenes y extrae las estadísticas', () => {

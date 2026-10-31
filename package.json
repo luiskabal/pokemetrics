@@ -11,7 +11,9 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "update:locales": "node scripts/update-locales.mjs",
-    "update:generations": "node scripts/update-generations.mjs"
+    "update:generations": "node scripts/update-generations.mjs",
+    "update:data": "node scripts/update-data.mjs",
+    "update:media": "python scripts/update-media.py"
   },
   "dependencies": { "svelte": "5.57.3" },
   "devDependencies": {

@@ -4,7 +4,7 @@
   import type { IllustrationId, ImageSet, TypeId } from './lib/metadata';
   import type { LoadState, Pokemon, ViewMode } from './lib/model';
   import { analyzePokemon, filterAndSortPokemon, percentage, pokemonInSegment } from './lib/analysis';
-  import { fetchGeneration, readCache, writeCache } from './lib/pokeapi';
+  import { loadGeneration, readCache } from './lib/pokeapi';
   import TypeFilters from './components/TypeFilters.svelte';
   import DistributionChart from './components/DistributionChart.svelte';
   import TypeIcon from './components/TypeIcon.svelte';
@@ -213,23 +213,20 @@
     if (next === 'legacy') selectedTypes = selectedTypes.filter(id => typesForGeneration($generation).some(type => type.id === id));
   }
 
-  async function load(id = $generation): Promise<void> {
+  async function load(id = $generation, force = false): Promise<void> {
     controller?.abort();
     const request = new AbortController(); controller = request;
     if (dataGeneration !== id) {
       const cached = readCache(id); pokemon = cached?.pokemon ?? []; savedAt = cached?.savedAt ?? null; dataGeneration = id;
     }
-    const timeout = setTimeout(() => request.abort(), 90_000);
     const status = pokemon.length ? 'refreshing' : 'loading';
     loadState = { status, completed: 0 };
     try {
-      const entries = await fetchGeneration(id, request.signal, completed => {
-        if (controller === request) loadState = { status, completed };
-      });
+      const dataset = await loadGeneration(id, request.signal, force);
       if (controller !== request) return;
-      pokemon = entries;
-      savedAt = writeCache(pokemon, id);
-      loadState = { status: 'ready', completed: entries.length };
+      pokemon = dataset.pokemon;
+      savedAt = dataset.savedAt;
+      loadState = { status: 'ready', completed: pokemon.length };
     } catch {
       request.abort();
       if (controller !== request) return;
@@ -238,8 +235,6 @@
       } else {
         loadState = { status: 'error', completed: 0 };
       }
-    } finally {
-      clearTimeout(timeout);
     }
   }
 
@@ -286,9 +281,9 @@
     {#if loadState.status === 'refreshing'}
       <div class="alert alert-info app-notice" role="status"><span>{$t('refreshingNotice')}</span></div>
     {:else if loadState.status === 'cached'}
-      <details class="cache-notice"><summary>{$t('usingSavedData')}{#if savedDate} · <time datetime={savedDate.toISOString()}>{savedDate.toLocaleDateString(LOCALES[$language])}</time>{/if}</summary><p>{connectionMessage}</p><button class="btn btn-sm" type="button" onclick={() => load()}>{$t('retry')}</button></details>
+      <details class="cache-notice"><summary>{$t('usingSavedData')}{#if savedDate} · <time datetime={savedDate.toISOString()}>{savedDate.toLocaleDateString(LOCALES[$language])}</time>{/if}</summary><p>{connectionMessage}</p><button class="btn btn-sm" type="button" onclick={() => load($generation, true)}>{$t('retry')}</button></details>
     {:else if loadState.status === 'error'}
-      <div class="alert alert-warning app-notice" role="status"><span>{connectionMessage}</span><button class="btn btn-sm" type="button" onclick={() => load()}>{$t('retry')}</button></div>
+      <div class="alert alert-warning app-notice" role="status"><span>{connectionMessage}</span><button class="btn btn-sm" type="button" onclick={() => load($generation, true)}>{$t('retry')}</button></div>
     {/if}
 
     {#if compactLayout}<nav class="explorer-navigation" aria-label={$t('explorerSections')}><div role="tablist" aria-label={$t('explorerSections')}>{#each explorerPanels as panel, index (panel.id)}<button class="btn" type="button" role="tab" id={'explorer-tab-' + panel.id} aria-controls={'explorer-' + panel.id} aria-selected={activePanel === panel.id} tabindex={activePanel === panel.id ? 0 : -1} onclick={() => showPanel(panel.id)} onkeydown={event => panelKeydown(event, index)}>{$t(panel.label)}{#if panel.id === 'list'}<small>{listedResults.length}</small>{/if}</button>{/each}</div></nav>{/if}
@@ -329,7 +324,7 @@
             </div>
           </section>
         {/if}
-        {#if against !== null}<GenerationComparison {pokemon} other={against} {selected} {view}/>{/if}
+        {#if against !== null && section === 'explore' && (!compactLayout || activePanel === 'analysis')}<GenerationComparison {pokemon} other={against} {selected} {view}/>{/if}
       </div>
     </div>
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
@@ -342,7 +337,7 @@
       <div class="connection-state">
         {#if updating}<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>{:else}<span class="status-dot"></span>{/if}
         <span id="connection-text" role="status">{connectionMessage}</span>
-        {#if loadState.status === 'ready'}<button class="btn btn-ghost btn-xs text-button" type="button" onclick={() => load()}>{$t('refresh')}</button>{/if}
+        {#if loadState.status === 'ready'}<button class="btn btn-ghost btn-xs text-button" type="button" onclick={() => load($generation, true)}>{$t('refresh')}</button>{/if}
       </div>
       {#if savedDate}<p class="cache-updated">{$t('lastLoaded')} <time datetime={savedDate.toISOString()}>{savedDate.toLocaleString(LOCALES[$language], { dateStyle: 'medium', timeStyle: 'short' })}</time></p>{/if}
       {#if updating}<progress class="progress progress-primary connection-progress" value={loadState.completed} max={definition.speciesIds.length} aria-label={$t('loadedPokemon')}></progress>{/if}

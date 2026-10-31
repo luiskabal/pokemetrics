@@ -143,17 +143,36 @@ export async function fetchGeneration(generationId: number, signal: AbortSignal,
 export const fetchKanto = (signal: AbortSignal, onProgress: (completed: number) => void) => fetchGeneration(1, signal, onProgress);
 export const cacheKey = (generation: number) => generation === 1 ? CACHE_KEY : `pokemetrics-generation-${generation}-v1`;
 
-export function readCache(generation = 1): { pokemon: Pokemon[]; savedAt: number } | null {
+export interface GenerationDataset { schemaVersion: 1; generation: number; pokemon: Pokemon[]; savedAt: number }
+export function parseGenerationDataset(value: unknown, generation: number): GenerationDataset {
+  if (!record(value) || value.schemaVersion !== 1 || value.generation !== generation || !positiveInteger(value.savedAt) || !Number.isFinite(new Date(value.savedAt).getTime()) || !isPokemonDataset(value.pokemon, generation)) throw Error('Invalid generation dataset');
+  return { schemaVersion: 1, generation, pokemon: value.pokemon, savedAt: value.savedAt };
+}
+
+export function readCache(generation = 1): { pokemon: Pokemon[]; savedAt: number; checkedAt: number } | null {
   try {
     const value: unknown = JSON.parse(localStorage.getItem(cacheKey(generation)) || 'null');
-    if (record(value) && isPokemonDataset(value.pokemon, generation) && positiveInteger(value.savedAt) && Number.isFinite(new Date(value.savedAt).getTime())) return { pokemon: value.pokemon, savedAt: value.savedAt };
+    if (record(value) && isPokemonDataset(value.pokemon, generation) && positiveInteger(value.savedAt) && Number.isFinite(new Date(value.savedAt).getTime())) return { pokemon: value.pokemon, savedAt: value.savedAt, checkedAt: positiveInteger(value.checkedAt) ? value.checkedAt : 0 };
   } catch { /* El almacenamiento puede estar bloqueado o contener datos incompletos. */ }
   return null;
 }
 
-export function writeCache(pokemon: Pokemon[], generation = 1): number {
-  const savedAt = Date.now();
-  try { localStorage.setItem(cacheKey(generation), JSON.stringify({ pokemon, savedAt })); }
+export function writeCache(pokemon: Pokemon[], generation = 1, savedAt = Date.now()): number {
+  try { localStorage.setItem(cacheKey(generation), JSON.stringify({ pokemon, savedAt, checkedAt: Date.now() })); }
   catch { /* La consulta funciona aunque el navegador no permita almacenamiento. */ }
   return savedAt;
+}
+
+export async function loadGeneration(generation: number, signal: AbortSignal, force = false): Promise<{ pokemon: Pokemon[]; savedAt: number }> {
+  signal.throwIfAborted();
+  const cached = readCache(generation);
+  const age = cached ? Date.now() - cached.checkedAt : Infinity;
+  if (!force && cached && age >= 0 && age < 86_400_000) return cached;
+  const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(20_000)]);
+  const response = await fetch(`${import.meta.env.BASE_URL}data/generation-${generation}.json`, { signal: requestSignal, cache: 'no-cache' });
+  if (!response.ok) throw Error(`Generation data HTTP ${response.status}`);
+  const dataset = parseGenerationDataset(await response.json(), generation);
+  requestSignal.throwIfAborted();
+  writeCache(dataset.pokemon, generation, dataset.savedAt);
+  return dataset;
 }

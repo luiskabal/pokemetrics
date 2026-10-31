@@ -2,7 +2,7 @@
   import { generation } from '../lib/generation-state';
   import { generationInfo } from '../lib/generations';
   import { analyzePokemon, percentage } from '../lib/analysis';
-  import { fetchGeneration, readCache, writeCache } from '../lib/pokeapi';
+  import { loadGeneration, readCache } from '../lib/pokeapi';
   import { localizedName, typeName } from '../lib/localization';
   import { language, t } from '../lib/i18n';
   import type { Pokemon, ViewMode } from '../lib/model';
@@ -17,7 +17,7 @@
   $effect(() => {
     retry; const id = other; const controller = new AbortController();
     secondary = readCache(id)?.pokemon ?? []; failed = false; loading = true;
-    void fetchGeneration(id, controller.signal, () => {}).then(entries => { if (!controller.signal.aborted) { secondary = entries; writeCache(entries, id); } }).catch(() => { if (!controller.signal.aborted) failed = true; }).finally(() => { if (!controller.signal.aborted) loading = false; });
+    void loadGeneration(id, controller.signal, retry > 0).then(dataset => { if (!controller.signal.aborted) secondary = dataset.pokemon; }).catch(() => { if (!controller.signal.aborted) failed = true; }).finally(() => { if (!controller.signal.aborted) loading = false; });
     return () => controller.abort();
   });
 </script>
