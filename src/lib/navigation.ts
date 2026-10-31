@@ -11,7 +11,7 @@ import type { UniverseScope } from './universe';
 export interface ExplorationState {
   view: ViewMode; types: TypeId[]; query: string; order: PokemonOrder; chart: 'pie' | 'bars';
   segment: string | null; pokemonId: number | null; illustration: IllustrationId; imageSet: ImageSet; language: Language; onlyFavorites: boolean;
-  generation: number; against: number | null; uiTheme: UiTheme; section: 'explore' | 'play';
+  generation: number; against: number | null; uiTheme: UiTheme; section: 'explore' | 'play' | 'teams';
   scope: UniverseScope; edition: string; dex: number | null;
 }
 
@@ -31,7 +31,7 @@ export function readExploration(url: URL, fallbackLanguage: Language = 'es-419',
   const segment = rawSegment === 'other' ? '' : rawSegment && rawSegment.split('+').length <= 2 && rawSegment.split('+').every(type => types.includes(type as TypeId)) ? [...new Set(rawSegment.split('+'))].sort().join('+') : null;
   return {
     scope, edition, dex: scope === 'regional' && Number.isSafeInteger(Number(p.get('dex'))) && Number(p.get('dex')) > 0 ? Number(p.get('dex')) : null,
-    section: p.get('section') === 'play' ? 'play' : 'explore',
+    section: p.get('section') === 'teams' ? 'teams' : p.get('section') === 'play' ? 'play' : 'explore',
     uiTheme: isUiTheme(p.get('ui')) ? p.get('ui') as UiTheme : fallbackTheme,
     view, types, generation, against: GENERATION_BY_ID.has(against) && against !== generation ? against : null, onlyFavorites: p.get('fav') === '1', query: (p.get('q') ?? '').slice(0, 100),
     order: fields.some(field => order === `${field}-asc` || order === `${field}-desc`) ? order as PokemonOrder : 'number-asc',
@@ -46,6 +46,6 @@ export function readExploration(url: URL, fallbackLanguage: Language = 'es-419',
 export function explorationUrl(url: URL, state: ExplorationState): URL {
   const result = new URL(url);
   const values = { gen: state.generation === 1 ? '' : String(state.generation), against: state.against?.toString() ?? '', view: state.view === 'current' ? '' : state.view, types: [...state.types].sort().join(','), q: state.query, order: state.order === 'number-asc' ? '' : state.order, chart: state.chart === 'pie' ? '' : state.chart, segment: state.segment === null ? '' : state.segment || 'other', pokemon: state.pokemonId?.toString() ?? '', art: state.illustration === (state.scope === 'introduced' ? defaultIllustration(state.generation) : `game:${state.edition}`) ? '' : state.illustration, game: state.imageSet === generationInfo(state.generation).games[0].id ? '' : state.imageSet, lang: state.language };
-  for (const [key, value] of Object.entries({ ...values, scope: state.scope === 'introduced' ? '' : state.scope, edition: state.edition === generationInfo(state.generation).games[0].id ? '' : state.edition, dex: state.dex?.toString() ?? '', section: state.section === 'play' ? 'play' : '', ui: state.uiTheme, fav: state.onlyFavorites ? '1' : '' })) { if (value) result.searchParams.set(key, value); else result.searchParams.delete(key); }
+  for (const [key, value] of Object.entries({ ...values, scope: state.scope === 'introduced' ? '' : state.scope, edition: state.edition === generationInfo(state.generation).games[0].id ? '' : state.edition, dex: state.dex?.toString() ?? '', section: state.section === 'explore' ? '' : state.section, ui: state.uiTheme, fav: state.onlyFavorites ? '1' : '' })) { if (value) result.searchParams.set(key, value); else result.searchParams.delete(key); }
   return result;
 }

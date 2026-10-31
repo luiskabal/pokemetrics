@@ -30,9 +30,10 @@
   import type { UiTheme } from './lib/ui-theme';
 
   const initialLocation = readExploration(new URL(location.href), $language, readUiTheme());
-  let section = $state<'explore' | 'play'>(initialLocation.section);
+  let section = $state<'explore' | 'play' | 'teams'>(initialLocation.section);
   let gameRoom = $state<Promise<typeof import('./components/GameRoom.svelte')> | null>(initialLocation.section === 'play' ? import('./components/GameRoom.svelte') : null);
-  const sectionScroll = { explore: 0, play: 0 };
+  let teamBuilder = $state<Promise<typeof import('./components/TeamBuilder.svelte')> | null>(initialLocation.section === 'teams' ? import('./components/TeamBuilder.svelte') : null);
+  const sectionScroll = { explore: 0, play: 0, teams: 0 };
   generation.set(initialLocation.generation);
   edition.set(initialLocation.edition);
   let scope = $state<UniverseScope>(initialLocation.scope);
@@ -100,7 +101,7 @@
 
   $effect(() => {
     document.documentElement.lang = $language;
-    document.title = 'Pokémetrics · ' + (section === 'play' ? $t('appPlay') : regionLabel);
+    document.title = 'Pokémetrics · ' + (section === 'play' ? $t('appPlay') : section === 'teams' ? $t('appTeams') : regionLabel);
     saveLanguage($language);
   });
 
@@ -125,6 +126,7 @@
     const next = readExploration(new URL(location.href), $language);
     section = next.section;
     scope = next.scope; dex = next.dex; edition.set(next.edition);
+    if (section === 'teams' && !teamBuilder) teamBuilder = import('./components/TeamBuilder.svelte');
     if (section === 'play' && !gameRoom) gameRoom = import('./components/GameRoom.svelte');
     view = next.view; selectedTypes = next.types; query = next.query; order = next.order; chart = next.chart;
     selectedSegment = next.segment; selectedPokemonId = next.pokemonId; imageSet = next.imageSet; illustration = next.illustration;
@@ -142,10 +144,11 @@
     checkpoint(); selectedPokemonId = id;
   }
 
-  async function changeSection(next: 'explore' | 'play'): Promise<void> {
+  async function changeSection(next: 'explore' | 'play' | 'teams'): Promise<void> {
     if (next === section) return;
     sectionScroll[section] = scrollY;
     checkpoint();
+    if (next === 'teams' && !teamBuilder) teamBuilder = import('./components/TeamBuilder.svelte');
     if (next === 'play' && !gameRoom) gameRoom = import('./components/GameRoom.svelte');
     section = next;
     await tick();
@@ -280,8 +283,8 @@
       <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#234e42"/><path d="M1 16h30" stroke="#f5f5ef" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#f5f5ef"/><circle cx="16" cy="16" r="2.5" fill="#234e42"/></svg>
       <span>poké<span>metrics</span></span>
     </div>
-    <nav class="site-navigation" aria-label={$t('appSections')}><button class="btn btn-sm" type="button" id="section-explore" aria-pressed={section === 'explore'} onclick={() => changeSection('explore')}>{$t('appExplore')}</button><button class="btn btn-sm" type="button" id="section-play" aria-pressed={section === 'play'} onclick={() => changeSection('play')}>{$t('appPlay')}</button></nav>
-    <div class="header-actions"><ShareLink url={shareUrl} id="share-link"/><a class="source-link" href="https://pokeapi.co/docs/v2" target="_blank" rel="noopener noreferrer" aria-label={$t('source')}><span class="status-dot"></span><span class="source-label">{$t('source')}</span><span aria-hidden="true">↗</span></a></div>
+    <nav class="site-navigation" aria-label={$t('appSections')}><button class="btn btn-sm" type="button" id="section-explore" aria-pressed={section === 'explore'} onclick={() => changeSection('explore')}>{$t('appExplore')}</button><button class="btn btn-sm" type="button" id="section-play" aria-pressed={section === 'play'} onclick={() => changeSection('play')}>{$t('appPlay')}</button><button class="btn btn-sm" type="button" id="section-teams" aria-pressed={section === 'teams'} onclick={() => changeSection('teams')}>{$t('appTeams')}</button></nav>
+    <div class="header-actions">{#if section !== 'teams'}<ShareLink url={shareUrl} id="share-link"/>{/if}<a class="source-link" href="https://pokeapi.co/docs/v2" target="_blank" rel="noopener noreferrer" aria-label={$t('source')}><span class="status-dot"></span><span class="source-label">{$t('source')}</span><span aria-hidden="true">↗</span></a></div>
   </header>
   <details class="preferences-panel"><summary>{$t('displayPreferences')} <small>{$t(UI_THEMES.find(option => option.id === uiTheme)!.label)} · {LANGUAGES.find(option => option.id === $language)!.label}</small></summary><div class="preferences"><AppearanceSelector value={uiTheme} onChange={value => { if (value !== uiTheme) { checkpoint(); uiTheme = value; } }}/><LanguageSelector/></div></details>
 
@@ -355,6 +358,7 @@
 
   <main id="play-main" tabindex="-1" hidden={section !== 'play'}>{#if gameRoom}{#await gameRoom}<p class="description" role="status">{$t('playLoading')}</p>{:then module}<module.default active={section === 'play'}/>{:catch}<p class="app-notice" role="alert">{$t('playLoadError')}</p><button class="btn btn-sm" type="button" onclick={() => gameRoom = import('./components/GameRoom.svelte')}>{$t('retry')}</button>{/await}{/if}</main>
 
+  <main id="teams-main" tabindex="-1" hidden={section !== 'teams'}>{#if teamBuilder}{#await teamBuilder}<p role="status">{$t('infoLoading')}</p>{:then module}<module.default onEdition={changeEdition}/>{:catch}<p role="alert">{$t('infoError')}</p><button class="btn btn-sm" onclick={() => teamBuilder = import('./components/TeamBuilder.svelte')}>{$t('retry')}</button>{/await}{/if}</main>
   <footer class="connection" id="connection" data-state={loadState.status} hidden={section !== 'explore'}>
     <div>
       <div class="connection-state">
