@@ -115,7 +115,7 @@ async function fetchJson(path: string, signal: AbortSignal): Promise<unknown> {
   return response.json();
 }
 
-export async function fetchGeneration(generationId: number, signal: AbortSignal, onProgress: (completed: number) => void): Promise<Pokemon[]> {
+export async function fetchGeneration(generationId: number, signal: AbortSignal, onProgress: (completed: number) => void, onPokemon?: (raw: unknown) => void): Promise<Pokemon[]> {
   const definition = generationInfo(generationId);
   const generation = await fetchJson('generation/' + generationId, signal);
   if (!record(generation) || !Array.isArray(generation.pokemon_species)) throw new Error('Generación incompleta en PokéAPI.');
@@ -131,8 +131,10 @@ export async function fetchGeneration(generationId: number, signal: AbortSignal,
       signal.throwIfAborted();
       const id = ids[next++];
       // La forma predeterminada comparte ID con su especie; las variantes quedan fuera del conteo.
-      const entry = normalizePokemon(await fetchJson('pokemon/' + id, signal), generationId);
+      const raw = await fetchJson('pokemon/' + id, signal);
+      const entry = normalizePokemon(raw, generationId);
       if (entry.id !== id) throw new Error('PokéAPI devolvió una especie diferente a la solicitada.');
+      onPokemon?.(raw);
       pokemon.push(entry);
       onProgress(pokemon.length);
     }

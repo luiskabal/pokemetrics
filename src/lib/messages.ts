@@ -1,4 +1,10 @@
 export const MESSAGES = {
+  levelMoves: ['Movimientos por nivel', 'Level-up moves', 'レベルアップで覚える技'],
+  movesGame: ['Juego del aprendizaje', 'Learnset game', '習得するゲーム'],
+  level: ['Nivel', 'Level', 'レベル'],
+  move: ['Movimiento', 'Move', '技'],
+  levelMovesHelp: ['Aprendizaje por nivel registrado para este juego. Nivel 0 se conserva tal como lo informa la fuente.', 'Recorded level-up learnset for this game. Level 0 is preserved as reported by the source.', 'このゲームのレベルアップ習得技です。レベル0は出典の記載どおりに表示します。'],
+  noGameMoves: ['No hay datos de aprendizaje por nivel para este juego. No se sustituyen por otra edición.', 'No level-up data for this game. Another edition is not substituted.', 'このゲームのレベルアップ技データはありません。他の版では代用しません。'],
   defensiveMatchups: ['Efectividad defensiva', 'Defensive matchups', '防御タイプ相性'],
   weaknesses: ['Debilidades', 'Weaknesses', '弱点'],
   resistances: ['Resistencias', 'Resistances', '耐性'],
