@@ -599,3 +599,11 @@ html[data-ui-theme] .explorer-analysis .overview { padding: 14px; }
 .scatter-axis { stroke: currentColor; fill: none; }
 #stat-scatter circle { cursor: pointer; stroke: var(--surface); stroke-width: .6; }
 #stat-scatter circle:hover, #stat-scatter circle:focus { r: 7px; stroke: var(--ink); stroke-width: 2; outline: none; }
+
+.capture-tracker { padding: 12px 0; border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+.capture-tracker summary { cursor: pointer; font-weight: 650; font-size: 12px; }
+.capture-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+.capture-controls label { display: grid; gap: 5px; flex: 1 1 170px; min-width: 0; font-size: 12px; }
+.capture-status select { width: 100%; min-height: 30px; height: 30px; font-size: 12px; padding: 4px 24px 4px 8px; }
+.capture-filter { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; }
+.capture-filter select { flex: 1; min-width: 0; }

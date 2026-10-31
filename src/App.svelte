@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount, tick, untrack } from 'svelte';
+  import { captureProfile, matchesCapture } from './lib/captures';
+  import type { CaptureStatus } from './lib/captures';
   import StatFilters from './components/StatFilters.svelte';
   import { availableStats, filterStatRanges } from './lib/stat-explorer';
   import type { StatRange } from './lib/stat-explorer';
@@ -51,6 +53,7 @@
   let illustration = $state<IllustrationId>(initialLocation.illustration);
   let selectedTypes = $state<TypeId[]>(initialLocation.types);
   let selectedSegment = $state<string | null>(initialLocation.segment);
+  let captureFilter = $state<CaptureStatus | 'all'>(initialLocation.captureFilter ?? 'all');
   let statRanges = $state<StatRange[]>(initialLocation.statRanges ?? []);
   let xStat = $state<HistoricalStatId>(initialLocation.xStat ?? 'attack');
   let yStat = $state<HistoricalStatId>(initialLocation.yStat ?? 'speed');
@@ -89,7 +92,8 @@
   const favorites = $derived(new Set(favoriteIds));
   const selectedList = $derived(segment ? pokemonInSegment(pokemon, selected, view, segment.key) : analysis.matches);
   const listedPokemon = $derived(onlyFavorites ? (selected.size ? selectedList : pokemon).filter(entry => favorites.has(entry.id)) : selectedList);
-  const listedResults = $derived(filterStatRanges(filterAndSortPokemon(listedPokemon, query, order, $language, view, $generation), statRanges, view, $generation));
+  const statResults = $derived(filterStatRanges(filterAndSortPokemon(listedPokemon, query, order, $language, view, $generation), statRanges, view, $generation));
+  const listedResults = $derived(statResults.filter(pokemon => matchesCapture($captureProfile, pokemon.id, captureFilter)));
   const comparedPokemon = $derived(compareIds.map(id => pokemon.find(entry => entry.id === id)!));
   const updating = $derived(loadState.status === 'loading' || loadState.status === 'refreshing');
   const savedDate = $derived(savedAt === null ? null : new Date(savedAt));
@@ -125,7 +129,7 @@
   });
 
   $effect(() => {
-    const state: ExplorationState = { statRanges, xStat, yStat, view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against, uiTheme, section, scope, edition: $edition, dex };
+    const state: ExplorationState = { captureFilter, statRanges, xStat, yStat, view, types: selectedTypes, query, order, chart, segment: selectedSegment, pokemonId: selectedPokemonId, imageSet, illustration, language: $language, onlyFavorites, generation: $generation, against, uiTheme, section, scope, edition: $edition, dex };
     const url = explorationUrl(new URL(location.href), state).href;
     if (url !== location.href) history.replaceState(null, '', url);
     shareUrl = url;
@@ -139,6 +143,7 @@
     scope = next.scope; dex = next.dex; edition.set(next.edition);
     if (section === 'teams' && !teamBuilder) teamBuilder = import('./components/TeamBuilder.svelte');
     if (section === 'play' && !gameRoom) gameRoom = import('./components/GameRoom.svelte');
+    captureFilter = next.captureFilter ?? 'all';
     statRanges = next.statRanges ?? []; xStat = next.xStat ?? 'attack'; yStat = next.yStat ?? 'speed';
     view = next.view; selectedTypes = next.types; query = next.query; order = next.order; chart = next.chart;
     selectedSegment = next.segment; selectedPokemonId = next.pokemonId; imageSet = next.imageSet; illustration = next.illustration;
@@ -334,7 +339,7 @@
       </div>
       <div class="explorer-list" id="explorer-list" role={compactLayout ? 'tabpanel' : undefined} aria-labelledby={compactLayout ? 'explorer-tab-list' : undefined} tabindex="-1" hidden={compactLayout && activePanel !== 'list'}>
         {#if favoriteSaveFailed}<p class="app-notice" role="status">{$t('favoritesSessionOnly')}</p>{/if}
-        <PokemonList pokemon={listedPokemon} results={listedResults} bind:query bind:order onOrderChange={checkpoint} {favorites} {onlyFavorites} onFavorite={toggleFavorite} onOnlyFavorites={() => { checkpoint(); onlyFavorites = !onlyFavorites; }} {compareIds} onCompare={toggleCompare} segmentLabel={segment?.label ?? null} onClearSegment={() => { checkpoint(); selectedSegment = null; }} {view} {illustration} hasSelection={selected.size > 0 || onlyFavorites} onOpen={entry => openPokemon(entry.id)} onShowFilters={() => showPanel('filters', true)}/>
+        <PokemonList universe={pokemon} {captureFilter} onCaptureFilter={value => { checkpoint(); captureFilter = value; }} pokemon={listedPokemon} results={listedResults} bind:query bind:order onOrderChange={checkpoint} {favorites} {onlyFavorites} onFavorite={toggleFavorite} onOnlyFavorites={() => { checkpoint(); onlyFavorites = !onlyFavorites; }} {compareIds} onCompare={toggleCompare} segmentLabel={segment?.label ?? null} onClearSegment={() => { checkpoint(); selectedSegment = null; }} {view} {illustration} hasSelection={selected.size > 0 || onlyFavorites} onOpen={entry => openPokemon(entry.id)} onShowFilters={() => showPanel('filters', true)}/>
       </div>
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (El análisis lateral desplazable necesita foco para poder recorrerlo con teclado.) -->
       <div class="explorer-analysis results" id="explorer-analysis" role={compactLayout ? 'tabpanel' : 'region'} aria-labelledby={compactLayout ? 'explorer-tab-analysis' : 'chart-title'} tabindex="0" hidden={compactLayout && activePanel !== 'analysis'}>

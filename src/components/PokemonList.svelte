@@ -4,13 +4,16 @@
   import { GEN_I_STATS, STATS } from '../lib/metadata';
   import type { IllustrationId } from '../lib/metadata';
   import { downloadFile, pokemonCsv } from '../lib/export';
+  import CaptureTracker from './CaptureTracker.svelte';
+  import CaptureStatus from './CaptureStatus.svelte';
+  import type { CaptureStatus as CaptureFilter } from '../lib/captures';
   import PokemonCard from './PokemonCard.svelte';
   import FavoriteButton from './FavoriteButton.svelte';
   import { generation } from '../lib/generation-state';
   import { generationInfo } from '../lib/generations';
   import { language, t } from '../lib/i18n';
   import { statName } from '../lib/localization';
-  let { pokemon, results, view, illustration, hasSelection, onOpen, onShowFilters, query = $bindable(''), order = $bindable<PokemonOrder>('number-asc'), onOrderChange, segmentLabel, onClearSegment, compareIds, onCompare, favorites, onlyFavorites, onFavorite, onOnlyFavorites }: { pokemon: Pokemon[]; results: Pokemon[]; view: ViewMode; illustration: IllustrationId; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; onShowFilters: () => void; query?: string; order?: PokemonOrder; onOrderChange: () => void; segmentLabel: string | null; onClearSegment: () => void; compareIds: number[]; onCompare: (id: number) => void; favorites: ReadonlySet<number>; onlyFavorites: boolean; onFavorite: (id: number) => void; onOnlyFavorites: () => void } = $props();
+  let { universe, captureFilter, onCaptureFilter, pokemon, results, view, illustration, hasSelection, onOpen, onShowFilters, query = $bindable(''), order = $bindable<PokemonOrder>('number-asc'), onOrderChange, segmentLabel, onClearSegment, compareIds, onCompare, favorites, onlyFavorites, onFavorite, onOnlyFavorites }: { universe: Pokemon[]; captureFilter: CaptureFilter | 'all'; onCaptureFilter: (value: CaptureFilter | 'all') => void; pokemon: Pokemon[]; results: Pokemon[]; view: ViewMode; illustration: IllustrationId; hasSelection: boolean; onOpen: (pokemon: Pokemon) => void; onShowFilters: () => void; query?: string; order?: PokemonOrder; onOrderChange: () => void; segmentLabel: string | null; onClearSegment: () => void; compareIds: number[]; onCompare: (id: number) => void; favorites: ReadonlySet<number>; onlyFavorites: boolean; onFavorite: (id: number) => void; onOnlyFavorites: () => void } = $props();
   let searchInput: HTMLInputElement;
   let exportStatus = $state<'exportReady' | 'exportError' | null>(null);
   let visibleLimit = $state(24);
@@ -41,6 +44,7 @@
 <section class="card pokemon-section" id="pokemon-section" aria-labelledby="pokemon-title">
   <div class="section-heading"><h2 id="pokemon-title" tabindex="-1">{$t('pokemonList')}</h2><span class="badge pokemon-count" id="pokemon-count" role="status" aria-live="polite">{hasSelection ? $t(query.trim() ? 'filteredCount' : 'pokemonCount', { count: results.length, total: pokemon.length }) : $t('noSelection')}</span></div>
   <div class="list-actions"><button class="btn btn-sm" id="only-favorites" type="button" aria-pressed={onlyFavorites} onclick={onOnlyFavorites}>{$t('myFavorites', { count: favorites.size })}</button><button class="btn btn-sm" id="export-csv" type="button" disabled={!results.length} onclick={exportCsv} aria-describedby="csv-help">{$t('exportCsv')}</button><span role="status">{exportStatus ? $t(exportStatus) : ''}</span></div>
+  <CaptureTracker pokemon={universe} filter={captureFilter} onFilter={onCaptureFilter}/>
   {#if segmentLabel}<div class="segment-notice"><strong>{$t('segmentSelected', { label: segmentLabel })}</strong><button class="btn btn-sm" id="clear-segment" type="button" onclick={onClearSegment}>{$t('clearSegment')}</button></div>{/if}
   <div class="pokemon-toolbar">
     <div class="pokemon-search">
@@ -75,7 +79,7 @@
   {#if illustration !== 'current' && pokemon.some(entry => entry.historicalArtworks === undefined)}<p class="list-help">{$t('historicalPending')}</p>{/if}
   {#if results.length}
     <ul class="pokemon-grid" id="pokemon-grid" aria-labelledby="pokemon-title">
-      {#each visibleResults as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/><div class="card-actions"><button class="btn btn-sm" type="button" data-compare={entry.id} aria-pressed={compareIds.includes(entry.id)} disabled={compareIds.length === 4 && !compareIds.includes(entry.id)} onclick={() => onCompare(entry.id)}>{$t(compareIds.includes(entry.id) ? 'inComparison' : 'compare')}</button><FavoriteButton pokemon={entry} active={favorites.has(entry.id)} onToggle={onFavorite}/></div></li>{/each}
+      {#each visibleResults as entry (entry.id)}<li><PokemonCard pokemon={entry} {view} {illustration} {onOpen}/><CaptureStatus id={entry.id}/><div class="card-actions"><button class="btn btn-sm" type="button" data-compare={entry.id} aria-pressed={compareIds.includes(entry.id)} disabled={compareIds.length === 4 && !compareIds.includes(entry.id)} onclick={() => onCompare(entry.id)}>{$t(compareIds.includes(entry.id) ? 'inComparison' : 'compare')}</button><FavoriteButton pokemon={entry} active={favorites.has(entry.id)} onToggle={onFavorite}/></div></li>{/each}
     </ul>
     <div class="list-pagination"><p role="status">{$t('shownPokemon', { shown: visibleResults.length, total: results.length })}</p>{#if visibleResults.length < results.length}<button class="btn btn-sm" id="show-more-pokemon" type="button" aria-controls="pokemon-grid" onclick={showMore}>{$t('showMorePokemon', { count: Math.min(24, results.length - visibleResults.length) })}</button>{/if}<p class="list-help">{$t('listChunkHelp')}</p></div>
   {:else}

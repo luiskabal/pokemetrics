@@ -8,6 +8,7 @@
   import TypeBadge from './TypeBadge.svelte';
   import ImageSelector from './ImageSelector.svelte';
   import IllustrationGallery from './IllustrationGallery.svelte';
+  import CaptureStatus from './CaptureStatus.svelte';
   import PokemonStats from './PokemonStats.svelte';
   import PokemonMatchups from './PokemonMatchups.svelte';
   import ShareLink from './ShareLink.svelte';
@@ -48,7 +49,7 @@
           <p class="dialog-type-caption" id="pokemon-dialog-view">{$t(view === 'legacy' ? 'originalTypes' : 'currentTypes')}</p>
           <div class="pokemon-types">{#each types as type (type)}<TypeBadge {type}/>{/each}</div>
           <div class="identity-facts"><dl class="physical-details"><div><dt>{$t('height')}</dt><dd id="pokemon-height">{(pokemon.height / 10).toLocaleString(LOCALES[$language])} m</dd></div><div><dt>{$t('weight')}</dt><dd id="pokemon-weight">{(pokemon.weight / 10).toLocaleString(LOCALES[$language])} kg</dd></div></dl>
-          <div class="detail-actions"><ShareLink url={shareUrl} id="share-pokemon"/><FavoriteButton {pokemon} active={isFavorite} onToggle={onFavorite}/></div></div>
+          <div class="detail-actions"><CaptureStatus id={pokemon.id}/><ShareLink url={shareUrl} id="share-pokemon"/><FavoriteButton {pokemon} active={isFavorite} onToggle={onFavorite}/></div></div>
         </div>
         <PokemonStats {pokemon} {view}/>
       </div>
