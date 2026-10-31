@@ -498,6 +498,9 @@ html[data-ui-theme] .explorer-analysis .overview { padding: 14px; }
 }
 
 .site-navigation { display: flex; gap: 6px; }
+.pokemon-stats .stat-fill, .pokemon-stats .radar-marker { background: var(--stat-color); fill: var(--stat-color); }
+.pokemon-stats .radar-axis { stroke: var(--stat-color); opacity: .5; }
+.pokemon-stats .stat-row dt::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: var(--stat-color); }
 .animation-control { display: block; margin: 10px auto; max-width: 100%; }
 .list-pagination { margin-top: 20px; text-align: center; color: var(--muted); font-size: 12px; }
 .list-pagination .btn { margin: 8px 0; }

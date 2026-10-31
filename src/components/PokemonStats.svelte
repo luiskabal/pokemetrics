@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GameId, HistoricalStatId } from '../lib/metadata';
+  import { STAT_COLORS } from '../lib/metadata';
   import type { Pokemon, ViewMode } from '../lib/model';
   import { statsForGeneration } from '../lib/stats';
   import { language, t } from '../lib/i18n';
@@ -62,20 +63,20 @@
           {/each}
           {#each stats as stat, index (stat.id)}
             {@const end = point(index, stats.length)}
-            <line class="radar-axis" x1="200" y1="148" x2={end.x} y2={end.y}/>
+            <line class="radar-axis" style:--stat-color={STAT_COLORS[stat.id]} x1="200" y1="148" x2={end.x} y2={end.y}/>
           {/each}
           <polygon class="radar-shape" points={polygon(stats.map(stat => stat.value))}/>
           {#each stats as stat, index (stat.id)}
             {@const marker = point(index, stats.length, stat.value / 255)}
             {@const label = point(index, stats.length, 1.33)}
-            <circle class="radar-marker" cx={marker.x} cy={marker.y} r="3.5"/>
+            <circle class="radar-marker" data-stat={stat.id} style:--stat-color={STAT_COLORS[stat.id]} cx={marker.x} cy={marker.y} r="4"/>
             <text class="radar-label" x={label.x} y={label.y} text-anchor={Math.abs(label.x - 200) < 1 ? 'middle' : label.x > 200 ? 'start' : 'end'}>{axisLabel(stat.id)}<tspan class="radar-value" x={label.x} dy="18">{stat.value}</tspan></text>
           {/each}
         </svg>
       {/if}
       <dl class="stat-list" id="pokemon-stats" class:stat-values={chart === 'radar'}>
         {#each stats as stat (stat.id)}
-          <div class="stat-row" data-stat={stat.id}><dt>{statName(stat.id, $language)}</dt><dd><span class="stat-number">{stat.value}</span>{#if chart === 'bars'}<span class="stat-track" aria-hidden="true"><span class="stat-fill" style:width={stat.value / 255 * 100 + '%'}></span></span>{/if}</dd></div>
+          <div class="stat-row" data-stat={stat.id} style:--stat-color={STAT_COLORS[stat.id]}><dt>{statName(stat.id, $language)}</dt><dd><span class="stat-number">{stat.value}</span>{#if chart === 'bars'}<span class="stat-track" aria-hidden="true"><span class="stat-fill" style:width={stat.value / 255 * 100 + '%'}></span></span>{/if}</dd></div>
         {/each}
       </dl>
     </div>
